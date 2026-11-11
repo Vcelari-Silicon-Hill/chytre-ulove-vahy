@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Správa vah</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='%23a8680f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<style>
+.narrow{max-width:420px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:12px}
+.form{display:grid;gap:10px}
+.form.row3{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:end}
+label{display:grid;gap:3px;font-size:13.5px;color:var(--muted)}
+input,select{font:14px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;padding:7px 9px;width:100%}
+.msg{font-size:14px;padding:8px 12px;border-radius:7px}
+.msg.err{background:var(--warn-soft);color:var(--warn)}
+.msg.ok{background:var(--good-soft);color:var(--good)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:760px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font:600 11.5px var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td .sub2{display:block;font-size:12.5px;color:var(--muted)}
+td.actions{white-space:nowrap;text-align:right}
+td.actions .btn{padding:4px 9px;font-size:13px}
+.btn.danger{color:var(--warn);border-color:var(--warn)}
+.result{border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:14px 16px;display:grid;gap:8px}
+.result pre{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:10px;font:12.5px/1.5 var(--font-mono);white-space:pre-wrap;word-break:break-all}
+.confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.tabs{margin:18px 0 14px;justify-self:start}
+.tabpanel{display:grid;gap:14px}
+section[data-view]{display:grid;gap:14px}
+.edit input{padding:4px 7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Chytré úly pro Silicon Hill · správa</div>
+      <h1>Správa vah</h1>
+    </div>
+    <div class="meta who" id="who"><a href="/">← veřejný přehled</a></div>
+  </header>
+
+  <!-- login -->
+  <section data-view="login" hidden>
+    <form class="panel narrow form" id="login-form">
+      <h2 style="margin:0">Přihlášení</h2>
+      <label>E-mail<input id="login-email" type="email" autocomplete="username" required></label>
+      <label>Heslo<input id="login-pass" type="password" autocomplete="current-password" required></label>
+      <div class="msg err" id="login-msg" hidden></div>
+      <button class="btn primary" type="submit">Přihlásit</button>
+      <p class="note" style="margin:0">Účet založí správce pozvánkou. Zapomenuté heslo: požádejte správce o nový odkaz.</p>
+    </form>
+  </section>
+
+  <!-- set password from invitation -->
+  <section data-view="setup" hidden>
+    <form class="panel narrow form" id="setup-form">
+      <h2 style="margin:0" id="setup-title">Nastavení hesla</h2>
+      <p style="margin:0" id="setup-email"></p>
+      <input type="email" id="setup-user" autocomplete="username" hidden>
+      <label>Nové heslo (aspoň 10 znaků)<input id="setup-pass" type="password" autocomplete="new-password" minlength="10" required></label>
+      <label>Heslo znovu<input id="setup-pass2" type="password" autocomplete="new-password" minlength="10" required></label>
+      <div class="msg err" id="setup-msg" hidden></div>
+      <button class="btn primary" type="submit">Uložit heslo a přihlásit</button>
+    </form>
+  </section>
+
+  <!-- logged in -->
+  <section data-view="app" hidden>
+    <div class="seg tabs" role="group" aria-label="Části správy">
+      <button type="button" data-tab="scales" aria-pressed="true">Váhy</button>
+      <button type="button" data-tab="people" id="tab-people">Lidé</button>
+      <button type="button" data-tab="account">Můj účet</button>
+    </div>
+
+    <section data-tab-panel="scales" class="tabpanel">
+      <div class="panel">
+        <h2 style="margin:0">Přidat váhu</h2>
+        <form class="form row3" id="add-scale">
+          <label>ID (do váhy, nejde změnit)<input id="ns-id" pattern="[a-z0-9][a-z0-9\-]{0,31}" placeholder="vaha-1"></label>
+          <label>Název na přehledu<input id="ns-name" placeholder="Úl 1" maxlength="80" required></label>
+          <label>Místo (nepovinné)<input id="ns-loc" placeholder="Strahov, u bloku 7" maxlength="120"></label>
+          <button class="btn primary" type="submit">Přidat váhu</button>
+        </form>
+        <div class="msg err" id="ns-msg" hidden></div>
+        <div class="result" id="token-box" hidden></div>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>Váha</th><th>Stav</th><th>Měření</th><th>Zařízení</th><th>Veřejná</th><th></th></tr></thead>
+        <tbody id="scales"></tbody>
+      </table></div>
+    </section>
+
+    <section data-tab-panel="people" class="tabpanel" hidden>
+      <div class="panel">
+        <h2 style="margin:0">Pozvat člověka</h2>
+        <form class="form row3" id="invite-form">
+          <label>E-mail<input id="inv-email" type="email" required></label>
+          <label>Role
+            <select id="inv-role">
+              <option value="editor">editor – spravuje váhy</option>
+              <option value="admin">správce – váhy i lidi</option>
+            </select>
+          </label>
+          <button class="btn primary" type="submit">Vytvořit pozvánku</button>
+        </form>
+        <div class="msg err" id="inv-msg" hidden></div>
+        <div class="result" id="invite-box" hidden></div>
+        <p class="note" style="margin:0">Aplikace e-maily neposílá. Vytvoří odkaz a text zprávy, který pošlete sami. Odkaz platí 7 dní a jde použít jen jednou.</p>
+      </div>
+      <div class="tbl"><table>
+        <thead><tr><th>E-mail</th><th>Role</th><th>Stav</th><th>Naposledy přihlášen</th><th></th></tr></thead>
+        <tbody id="users"></tbody>
+      </table></div>
+    </section>
+
+    <section data-tab-panel="account" class="tabpanel" hidden>
+      <form class="panel narrow form" id="pw-form">
+        <h2 style="margin:0">Změna hesla</h2>
+        <input type="email" id="pw-user" autocomplete="username" hidden>
+        <label>Současné heslo<input id="pw-old" type="password" autocomplete="current-password" required></label>
+        <label>Nové heslo (aspoň 10 znaků)<input id="pw-new" type="password" autocomplete="new-password" minlength="10" required></label>
+        <div class="msg" id="pw-msg" hidden></div>
+        <button class="btn primary" type="submit">Změnit heslo</button>
+      </form>
+    </section>
+  </section>
+</div>
+<script src="admin.js"></script>
+</body>
+</html>

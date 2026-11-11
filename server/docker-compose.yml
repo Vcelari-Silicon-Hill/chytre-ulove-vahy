@@ -8,6 +8,9 @@ services:
       SITE_TITLE: "Včelí váhy Silicon Hill"
       REPO_URL: "https://github.com/Vcelari-Silicon-Hill/chytre-ulove-vahy"
       TZ_NAME: "Europe/Prague"
+      # set these in Coolify (Environment Variables), not here – the repository is public
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}     # first admin, gets a password setup link in the logs
+      PUBLIC_URL: ${PUBLIC_URL:-}       # e.g. https://vahy.example.org, used in invitation links
     volumes:
       - vahy-data:/data
     expose:

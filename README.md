@@ -49,11 +49,30 @@ pip install -r requirements.txt
 uvicorn app.main:app --port 8000
 ```
 
-Nastavení přes proměnné prostředí: `SITE_TITLE`, `REPO_URL`, `TZ_NAME` (výchozí Europe/Prague), `DB_PATH` (výchozí `/data/vahy.db` v Dockeru), `STALE_AFTER_S` (po kolika sekundách bez dat je váha „nehlásí se“, výchozí 3 h).
+Nastavení přes proměnné prostředí:
 
-### 2. Přidat váhy
+| Proměnná | Význam |
+|---|---|
+| `ADMIN_EMAIL` | e-mail prvního správce; při prvním startu se v logu objeví odkaz na nastavení jeho hesla |
+| `PUBLIC_URL` | veřejná adresa serveru, např. `https://vahy.example.org` (pro odkazy v pozvánkách) |
+| `SITE_TITLE`, `REPO_URL` | název na přehledu, odkaz na zdrojový kód |
+| `TZ_NAME` | časové pásmo, výchozí Europe/Prague |
+| `DB_PATH` | databáze, v Dockeru `/data/vahy.db` |
+| `STALE_AFTER_S` | po kolika sekundách bez dat je váha „nehlásí se“, výchozí 3 h |
 
-Každá váha má své ID a tajný token. Na serveru (v Coolify přes *Terminal*):
+`ADMIN_EMAIL` a `PUBLIC_URL` nastavte v Coolify, ne v repozitáři, protože je veřejný.
+
+### 2. Správa a přidání vah
+
+Na `https://váš-server/admin/` se přihlásí správci. První správce je z `ADMIN_EMAIL`: po prvním startu najdete v logu serveru odkaz, kterým si nastaví heslo (platí 7 dní). Kdyby vypršel, nový vypíše `python -m app.admin invite váš@email --role admin`.
+
+Ve správě:
+
+- **Váhy:** přidání váhy (vypíše ID a tajný token pro nastavení váhy), přejmenování, skrytí z veřejného přehledu, nový token, smazání.
+- **Lidé** (jen správci): pozvánka e-mailem. Aplikace e-maily neposílá, připraví odkaz a text zprávy (tlačítko otevře e-mailového klienta). Pozvaný si odkazem nastaví heslo. Role *editor* spravuje váhy, *správce* i lidi. Zapomenuté heslo: správce vydá nový odkaz.
+- **Můj účet:** změna hesla.
+
+Totéž jde i z příkazové řádky na serveru (v Coolify přes *Terminal*):
 
 ```bash
 python -m app.admin add vaha-1 "Úl 1" --location "Strahov"

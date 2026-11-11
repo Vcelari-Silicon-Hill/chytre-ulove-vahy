@@ -6,6 +6,7 @@ GET  /api/v1/scales/{id}/series?days=7
 GET  /api/v1/scales/{id}/csv?days=30
 GET  /                         public dashboard
 GET  /flash/                   firmware installer and scale setup in the browser
+GET  /admin/                   management: scales and people (login required), see auth.py
 """
 import csv
 import io
@@ -13,14 +14,14 @@ import os
 import time
 from typing import Optional
 
-from fastapi import FastAPI, Header, HTTPException, Query
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import PlainTextResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import db
+from . import auth, db
 from .processing import battery_percent, change_over, downsample, net_weight
 
 STATIC = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -29,13 +30,19 @@ REPO_URL = os.environ.get("REPO_URL", "https://github.com/Vcelari-Silicon-Hill/c
 STALE_AFTER_S = int(os.environ.get("STALE_AFTER_S", 3 * 3600))
 MAX_POINTS = 1500
 
+
 @asynccontextmanager
 async def lifespan(_app):
     db.init()
+    link = auth.ensure_first_admin()
+    if link:
+        print(f"\n*** Odkaz pro nastavení hesla správce {os.environ.get('ADMIN_EMAIL')} (platí {auth.INVITE_DAYS} dní):\n*** {link}\n"
+              "*** Bez PUBLIC_URL je to jen cesta, doplňte před ni adresu serveru.\n", flush=True)
     yield
 
 
 app = FastAPI(title=SITE_TITLE, docs_url="/api/docs", redoc_url=None, lifespan=lifespan)
+app.include_router(auth.router)
 
 
 # ---------- ingest ----------
@@ -184,5 +191,11 @@ def flash_redirect():
     return RedirectResponse("/flash/")
 
 
+@app.get("/admin", include_in_schema=False)
+def admin_redirect():
+    return RedirectResponse("/admin/")
+
+
+app.mount("/admin/", StaticFiles(directory=os.path.join(STATIC, "admin"), html=True), name="admin")
 app.mount("/flash/", StaticFiles(directory=os.path.join(STATIC, "flash"), html=True), name="flash")
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")

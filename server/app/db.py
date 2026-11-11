@@ -32,6 +32,27 @@ CREATE TABLE IF NOT EXISTS readings (
     vbat      REAL,
     PRIMARY KEY (scale_id, ts)
 ) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS users (
+    id          INTEGER PRIMARY KEY,
+    email       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    role        TEXT NOT NULL CHECK (role IN ('admin', 'editor')),
+    pw_hash     TEXT,
+    created_at  INTEGER NOT NULL,
+    invited_by  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    last_login  INTEGER
+);
+CREATE TABLE IF NOT EXISTS invites (
+    token_hash  TEXT PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at  INTEGER NOT NULL,
+    used        INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash  TEXT PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at  INTEGER NOT NULL,
+    expires_at  INTEGER NOT NULL
+);
 """
 
 

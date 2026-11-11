@@ -6,13 +6,17 @@
     python -m app.admin rename vaha-1 "Úl 1 – Kraňská"
     python -m app.admin hide vaha-1 / show vaha-1
     python -m app.admin delete vaha-1         # deletes the scale and all its data
+
+People who can log in to /admin/:
+    python -m app.admin invite someone@example.org --role admin   # prints a one-time link to set the password
+    python -m app.admin users
 """
 import argparse
 import re
 import sys
 import time
 
-from . import db
+from . import auth, db
 
 
 def main(argv=None) -> int:
@@ -32,6 +36,10 @@ def main(argv=None) -> int:
     for name in ("hide", "show", "delete"):
         x = sub.add_parser(name)
         x.add_argument("id")
+    inv = sub.add_parser("invite", help="pozvat člověka do správy (nebo mu vydat nový odkaz)")
+    inv.add_argument("email")
+    inv.add_argument("--role", choices=["admin", "editor"], default="editor")
+    sub.add_parser("users", help="vypsat lidi ve správě")
     args = p.parse_args(argv)
     db.init()
 
@@ -54,6 +62,18 @@ def main(argv=None) -> int:
             seen = time.strftime("%Y-%m-%d %H:%M", time.localtime(s["last_seen"])) if s["last_seen"] else "nikdy"
             vis = "" if s["public"] else " [skrytá]"
             print(f"{s['id']:<12} {s['name']:<24} měření: {s['n']:<7} naposledy: {seen}  fw {s['fw'] or '-'}  MAC {s['mac'] or '-'}{vis}")
+    elif args.cmd == "invite":
+        with db.db() as con:
+            row = con.execute("SELECT id FROM users WHERE email=?", (args.email,)).fetchone()
+        uid = row["id"] if row else auth.create_user(args.email, args.role)
+        link = auth.setup_link(auth.create_invite(uid))
+        print(f"Odkaz pro {args.email} (platí {auth.INVITE_DAYS} dní):\n  {link}")
+        if not auth.PUBLIC_URL:
+            print("Bez proměnné PUBLIC_URL je to jen cesta, doplňte před ni adresu serveru.")
+    elif args.cmd == "users":
+        with db.db() as con:
+            for u in con.execute("SELECT email, role, pw_hash IS NOT NULL AS active FROM users ORDER BY id"):
+                print(f"{u['email']:<36} {u['role']:<7} {'aktivní' if u['active'] else 'čeká na nastavení hesla'}")
     elif args.cmd == "token":
         try:
             print(f"Nový token pro {args.id}: {db.rotate_token(args.id)}")
