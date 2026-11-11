@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nastavení úlové váhy</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='%23a8680f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<style>
+.steps{display:grid;gap:16px}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:10px}
+.step h2{margin:0;font-size:18px;border:0}
+.step p{margin:0;max-width:80ch}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 18px}
+.form label{display:grid;gap:3px;font-size:13.5px;color:var(--muted)}
+.form label.wide{grid-column:1/-1}
+input,select,textarea{font:14px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;padding:7px 9px;width:100%}
+textarea{font-family:var(--font-mono);font-size:12px;min-height:70px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.live{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.live div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.live b{display:block;font:600 22px var(--font-body);font-variant-numeric:tabular-nums}
+.live span{font-size:12px;color:var(--muted)}
+#log{background:#111418;color:#d7dbe0;font:12px/1.45 var(--font-mono);border-radius:8px;padding:10px;height:220px;overflow:auto;white-space:pre-wrap;margin:0}
+.warn{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 6px 6px 0}
+.status{font:600 13px var(--font-mono)}
+.status.on{color:var(--good)} .status.off{color:var(--muted)}
+fieldset{border:0;padding:0;margin:0;display:contents}
+esp-web-install-button button{font:600 14px var(--font-body)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Chytré úly pro Silicon Hill · instalace a kalibrace</div>
+      <h1>Nastavení úlové váhy</h1>
+      <p class="sub">Firmware nahrajete a váhu nastavíte přímo z prohlížeče. Potřebujete Chrome nebo Edge na počítači a kabel USB-C, který umí přenášet data.</p>
+    </div>
+    <div class="meta"><a href="/">← zpět na přehled vah</a></div>
+  </header>
+
+  <div class="warn" id="nosupport" hidden>Tento prohlížeč neumí Web Serial. Otevřete stránku v Chrome nebo Edge na počítači (ne v telefonu).</div>
+
+  <div class="steps">
+    <section class="step">
+      <h2><span class="n mono" style="color:var(--accent)">1</span> Nahrát firmware</h2>
+      <p>Připojte Meteo Mini kabelem k počítači a klikněte na tlačítko. Prohlížeč se zeptá na sériový port, vyberte ten s ESP32-C3 (USB JTAG/serial). Při první instalaci zvolte smazání paměti, při aktualizaci ho nezaškrtávejte, jinak se smaže i nastavení a kalibrace.</p>
+      <div class="row">
+        <esp-web-install-button manifest="manifest.json">
+          <button slot="activate" class="btn primary" type="button">Nahrát firmware do váhy</button>
+          <span slot="unsupported">Prohlížeč nepodporuje instalaci přes USB.</span>
+          <span slot="not-allowed">Instalace funguje jen přes HTTPS.</span>
+        </esp-web-install-button>
+        <span class="note" id="fwver"></span>
+      </div>
+      <p class="note">Po nahrání zavřete okno instalátoru. Deska se restartuje a 10 minut čeká na nastavení.</p>
+    </section>
+
+    <section class="step">
+      <h2><span class="n mono" style="color:var(--accent)">2</span> Připojit se k váze</h2>
+      <p>Pokud je váha už nastavená, čeká na připojení jen 20 sekund po zapnutí. Stiskněte RESET (nebo odpojte a připojte USB) a pak hned klikněte na Připojit.</p>
+      <div class="row">
+        <button class="btn primary" id="connect" type="button">Připojit</button>
+        <button class="btn" id="disconnect" type="button" disabled>Odpojit</button>
+        <span class="status off" id="status">nepřipojeno</span>
+        <span class="note" id="devinfo"></span>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n mono" style="color:var(--accent)">3</span> Wi-Fi a server</h2>
+      <p>ID váhy a token vypíše správce serveru příkazem <code>python -m app.admin add</code>. Token je tajný, nikam ho nepište veřejně.</p>
+      <form class="form" id="cfg" autocomplete="off">
+        <label>ID váhy<input id="scale_id" placeholder="vaha-1" required></label>
+        <label>Token<input id="token" type="password" placeholder="z nástroje správce"></label>
+        <label class="wide">Adresa serveru<input id="url" placeholder="https://…/api/v1/ingest"></label>
+        <label>Typ Wi-Fi
+          <select id="wifitype">
+            <option value="psk">s heslem (domácí, WPA2)</option>
+            <option value="eap">podniková (PEAP, např. SiliconHill)</option>
+          </select>
+        </label>
+        <label>Název sítě (SSID)<input id="ssid" placeholder="SiliconHill"></label>
+        <label data-psk>Heslo Wi-Fi<input id="pass" type="password"></label>
+        <label data-eap hidden>Uživatel<input id="eap_user"></label>
+        <label data-eap hidden>Heslo<input id="eap_pass" type="password"></label>
+        <label data-eap hidden class="wide">CA certifikát serveru RADIUS (PEM, nepovinné)<textarea id="eap_ca" placeholder="-----BEGIN CERTIFICATE-----"></textarea></label>
+        <label>Ověřování HTTPS
+          <select id="tls"><option value="verify">ověřovat (Let's Encrypt)</option><option value="insecure">neověřovat (jen pro test)</option></select>
+        </label>
+        <label>Interval měření (s)<input id="interval" type="number" min="60" step="60" value="900"></label>
+      </form>
+      <p class="note">Prázdné pole s heslem nebo tokenem se neuloží, váha si ponechá předchozí hodnotu.</p>
+      <div class="row">
+        <button class="btn primary" id="save" type="button" disabled>Uložit do váhy</button>
+        <button class="btn" id="wifitest" type="button" disabled>Test Wi-Fi</button>
+        <button class="btn" id="upload" type="button" disabled>Odeslat zkušební měření</button>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n mono" style="color:var(--accent)">4</span> Kalibrace</h2>
+      <p>Postup: prázdná váha → Tára. Doprostřed plošiny položte závaží se známou hmotností (převážené na ověřené váze), zadejte ji a klikněte na Kalibrovat. Nakonec určete teploměry: klikněte na tlačítko a zahřejte v dlani ten, který je přilepený na tenzometru.</p>
+      <div class="live" id="live">
+        <div><span>hmotnost</span><b id="lv-kg">–</b></div>
+        <div><span>surová hodnota</span><b id="lv-raw">–</b></div>
+        <div><span>teplota tenzometru</span><b id="lv-tc">–</b></div>
+        <div><span>teplota v krabici</span><b id="lv-tb">–</b></div>
+        <div><span>baterie</span><b id="lv-vb">–</b></div>
+      </div>
+      <div class="row">
+        <button class="btn" id="livebtn" type="button" disabled>Živé měření</button>
+        <button class="btn" id="tare" type="button" disabled>Tára (prázdná váha)</button>
+        <input id="calkg" type="number" step="0.01" min="0.1" placeholder="hmotnost závaží v kg" style="width:200px">
+        <button class="btn" id="cal" type="button" disabled>Kalibrovat</button>
+        <button class="btn" id="dsfind" type="button" disabled>Určit teploměry</button>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n mono" style="color:var(--accent)">5</span> Spustit</h2>
+      <p>Když je vše nastavené, spusťte měření. Váha změří, odešle data a usne. Odpojte USB a připojte baterii a panel podle návodu.</p>
+      <div class="row">
+        <button class="btn primary" id="run" type="button" disabled>Spustit měření</button>
+        <span class="note" id="mac"></span>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2>Konzole</h2>
+      <pre id="log" aria-live="polite"></pre>
+      <div class="row">
+        <input id="cmd" placeholder="příkaz, např. help" style="flex:1;min-width:200px" disabled>
+        <button class="btn" id="send" type="button" disabled>Odeslat</button>
+      </div>
+    </section>
+  </div>
+
+  <footer><span>Zdrojový kód je na GitHubu pod licencí MIT. Instalátor používá <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>.</span></footer>
+</div>
+<script type="module" src="vendor/esp-web-tools/install-button.js"></script>
+<script src="flash.js"></script>
+</body>
+</html>

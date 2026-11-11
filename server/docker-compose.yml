@@ -1,0 +1,19 @@
+# Works as-is in Coolify (Docker Compose resource) or with plain `docker compose up -d`.
+# In Coolify set the domain on the "vahy" service, port 8000. HTTPS is required for the browser installer.
+services:
+  vahy:
+    build: .
+    restart: unless-stopped
+    environment:
+      SITE_TITLE: "Včelí váhy Silicon Hill"
+      REPO_URL: "https://github.com/Vcelari-Silicon-Hill/chytre-ulove-vahy"
+      TZ_NAME: "Europe/Prague"
+    volumes:
+      - vahy-data:/data
+    expose:
+      - "8000"
+    # without Coolify/Traefik, publish the port instead:
+    # ports:
+    #   - "8000:8000"
+volumes:
+  vahy-data:

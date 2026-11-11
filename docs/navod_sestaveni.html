@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sestavení úlové váhy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: technical-manual sheets, same identity as the wiring scheme; print-first (A4), readable on screen */
+:root{
+  --bg:#f6f4ee; --panel:#fffdf8; --fg:#1f2429; --muted:#5f6670; --line:#d6d0c1; --line-strong:#9b9384;
+  --accent:#a8680f; --accent-soft:#f4e7cb; --warn:#a33a1f; --warn-soft:#f8e3da; --ok:#2f7a45; --code-bg:#efece3;
+  --block:#fffdf8; --block-stroke:#4a4f55; --gland:#cfc8b7; --terminal:#7a8a5a; --casing:#878d95;
+  --w-red:#d23a2c; --w-black:#202224; --w-white:#fbfbfb; --w-green:#2f9a4c; --w-blue:#2d6bd6; --w-yellow:#e6b412;
+  --sky:#e7eef3; --soil:#b9a88a; --wood:#d9b27a; --wood-dark:#a7824e;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14171b; --panel:#1b1f24; --fg:#e8e5dd; --muted:#9ca3ad; --line:#323840; --line-strong:#59616b;
+  --accent:#e3a940; --accent-soft:#3a2f19; --warn:#f08a6c; --warn-soft:#3b211a; --ok:#7cc492; --code-bg:#1f242a;
+  --block:#1d2228; --block-stroke:#a7adb5; --gland:#4a4f57; --terminal:#9fb07c; --casing:#a3a9b1;
+  --sky:#1c2630; --soil:#5a5040; --wood:#8a6a3e; --wood-dark:#6b5230; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14171b; --panel:#1b1f24; --fg:#e8e5dd; --muted:#9ca3ad; --line:#323840; --line-strong:#59616b;
+  --accent:#e3a940; --accent-soft:#3a2f19; --warn:#f08a6c; --warn-soft:#3b211a; --ok:#7cc492; --code-bg:#1f242a;
+  --block:#1d2228; --block-stroke:#a7adb5; --gland:#4a4f57; --terminal:#9fb07c; --casing:#a3a9b1;
+  --sky:#1c2630; --soil:#5a5040; --wood:#8a6a3e; --wood-dark:#6b5230; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--font-body)}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+header.cover{border-bottom:2px solid var(--fg);padding-bottom:18px;margin-bottom:22px;display:grid;gap:8px}
+.kicker{font:600 12px/1.4 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:75ch}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin:6px 0 0;padding:0;list-style:none;font-size:14px}
+.facts b{font:600 11px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block}
+h2{font-size:22px;margin:40px 0 12px;display:flex;gap:12px;align-items:baseline;text-wrap:balance;border-bottom:1px solid var(--line);padding-bottom:6px}
+h2 .n{font:600 13px var(--font-mono);color:var(--accent)}
+h3{font-size:16px;margin:18px 0 6px}
+p,li{max-width:80ch}
+p{margin:6px 0}
+ul,ol{padding-left:20px;margin:6px 0}
+li{margin:3px 0}
+code,.mono{font-family:var(--font-mono);font-size:.9em}
+.num{font-variant-numeric:tabular-nums}
+
+.note{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 6px 6px 0;margin:12px 0}
+.note.info{border-left-color:var(--accent);background:var(--accent-soft)}
+.note p{margin:0}
+.note p+p{margin-top:4px}
+
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow-x:auto;padding:8px;margin:10px 0}
+.diagram svg{display:block;width:100%;height:auto}
+.diagram.wide svg{min-width:900px}
+.cap{font-size:13px;color:var(--muted);margin:4px 0 0}
+
+svg text{fill:var(--fg);font-family:var(--font-mono);font-size:12px}
+svg .tb{font:600 14px var(--font-body)}
+svg .ts{font-size:11px;fill:var(--muted)}
+svg .ta{fill:var(--accent);font-weight:600}
+svg .tw{fill:var(--warn);font-weight:600}
+svg .blk{fill:var(--block);stroke:var(--block-stroke);stroke-width:1.5}
+svg .encl{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:8 6}
+svg .gland{fill:var(--gland);stroke:var(--block-stroke);stroke-width:1}
+svg .term{fill:var(--terminal);stroke:var(--block-stroke);stroke-width:1}
+svg .hous{fill:var(--line-strong);stroke:var(--block-stroke);stroke-width:1}
+svg .dash{fill:none;stroke:var(--line-strong);stroke-width:1.2;stroke-dasharray:4 4}
+svg .dim{fill:none;stroke:var(--muted);stroke-width:1}
+svg .casing{fill:none;stroke:var(--casing);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round}
+svg .w{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+svg .r{stroke:var(--w-red)} svg .k{stroke:var(--w-black)} svg .wh{stroke:var(--w-white)}
+svg .g{stroke:var(--w-green)} svg .b{stroke:var(--w-blue)} svg .y{stroke:var(--w-yellow)}
+svg .panelcell{fill:#2a3f66;stroke:#8fa6cc;stroke-width:.8}
+svg .steel{fill:var(--line-strong);stroke:var(--block-stroke)}
+svg .sky{fill:var(--sky)}
+svg .soil{fill:var(--soil)}
+svg .wood{fill:var(--wood);stroke:var(--wood-dark);stroke-width:1.2}
+svg .cable{fill:none;stroke:var(--w-black);stroke-width:3;stroke-linecap:round}
+svg .hole{fill:var(--bg);stroke:var(--block-stroke);stroke-width:1.5}
+svg .cross{stroke:var(--muted);stroke-width:.8}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
+.legend li{display:flex;align-items:center;gap:6px;margin:0}
+.sw{width:22px;height:6px;border-radius:3px;border:1.5px solid var(--casing);display:inline-block}
+
+.tbl{overflow-x:auto;margin:8px 0 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11.5px var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--code-bg)}
+tr:last-child td{border-bottom:0}
+td.c{text-align:center;white-space:nowrap}
+td .dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid var(--casing);margin-right:6px;vertical-align:-1px}
+.box{display:inline-block;width:13px;height:13px;border:1.5px solid var(--fg);border-radius:2px;vertical-align:-2px}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 28px}
+.grid2>*{min-width:0}
+
+.step{display:grid;grid-template-columns:52px 1fr;gap:4px 14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+.step:last-child{border-bottom:0}
+.step>.badge{grid-row:span 3;width:44px;height:44px;border-radius:50%;border:2px solid var(--accent);color:var(--accent);display:grid;place-items:center;font:600 18px var(--font-mono)}
+.step>*{min-width:0}
+.step>*:not(.badge){grid-column:2}
+.step>.badge{grid-column:1;grid-row:1 / span 2;align-self:start}
+.step h3{margin:0;font-size:17px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.step h3 .t{font:500 12px var(--font-mono);color:var(--muted)}
+.step .done{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;margin-top:6px}
+.step ol,.step ul{margin:4px 0}
+
+.record td{height:30px}
+footer{margin-top:40px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;color:var(--muted)}
+a{color:var(--accent)}
+
+/* ---------- black & white variant (class "bw" on <html>): wires told apart by pattern, not colour ---------- */
+html.bw:root,html.bw:root[data-theme="dark"]{
+  --bg:#fff; --panel:#fff; --fg:#000; --muted:#3d3d3d; --line:#b5b5b5; --line-strong:#8c8c8c;
+  --accent:#000; --accent-soft:#ececec; --warn:#000; --warn-soft:#ececec; --ok:#000; --code-bg:#ececec;
+  --block:#fff; --block-stroke:#1e1e1e; --gland:#cfcfcf; --terminal:#9a9a9a; --casing:#8c8c8c;
+  --w-red:#000; --w-black:#000; --w-white:#fff; --w-green:#fff; --w-blue:#8a8a8a; --w-yellow:#000;
+  --sky:#fff; --soil:#e2e2e2; --wood:#f0f0f0; --wood-dark:#6a6a6a; color-scheme:light}
+html.bw svg .panelcell{fill:#555;stroke:#ddd}
+html.bw svg .w{stroke-linecap:butt}
+html.bw svg .w.k{stroke-dasharray:9 5}
+html.bw svg .w.g{stroke-dasharray:6 4}
+html.bw svg .w.y{stroke-dasharray:11 4 2 4}
+html.bw svg .casing{stroke-width:7}
+html.bw .note{border-left-width:5px}
+html.bw .sw{height:8px;border-color:#8c8c8c}
+html.bw .sw[style*="w-black"]{background:repeating-linear-gradient(90deg,#000 0 6px,#8c8c8c 6px 9px)!important}
+html.bw .sw[style*="w-green"]{background:repeating-linear-gradient(90deg,#fff 0 5px,#8c8c8c 5px 8px)!important}
+html.bw .sw[style*="w-yellow"]{background:repeating-linear-gradient(90deg,#000 0 7px,#8c8c8c 7px 9px,#000 9px 10px,#8c8c8c 10px 12px)!important}
+html.bw .bw-only{display:inline}
+.bw-only{display:none}
+
+/* ---------- print ---------- */
+@page{size:A4;margin:13mm 13mm 15mm 13mm}
+@page wide{size:A4 landscape;margin:10mm 12mm 13mm 12mm}
+@media print{
+  :root,:root[data-theme="dark"]{
+    --bg:#ffffff; --panel:#ffffff; --fg:#1b1f23; --muted:#555c64; --line:#cfc8b8; --line-strong:#9b9384;
+    --accent:#9a5e0b; --accent-soft:#f6ecd6; --warn:#a33a1f; --warn-soft:#f9e6de; --ok:#2f7a45; --code-bg:#f1eee6;
+    --block:#ffffff; --block-stroke:#4a4f55; --gland:#cfc8b7; --terminal:#7a8a5a; --casing:#878d95;
+    --sky:#eef3f6; --soil:#c9bb9f; --wood:#e2bf8b; --wood-dark:#a7824e; color-scheme:light}
+  body{font-size:10pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:none;padding:0}
+  h1{font-size:26pt}
+  h2{font-size:15pt;margin:18px 0 8px}
+  h3{font-size:11.5pt}
+  table{font-size:9.5pt}
+  th,td{padding:4px 8px}
+  .record td{height:34px}
+  th{font-size:8pt}
+  .newpage{break-before:page}
+  .landscape{page:wide}
+  .landscape h2{margin-top:0}
+  .diagram{break-inside:avoid;padding:4px}
+  .diagram.wide svg{min-width:0}
+  .step{break-inside:avoid;padding:9px 0}
+  .step>.badge{width:36px;height:36px;font-size:15px}
+  .step h3{font-size:12pt}
+  .note,.tbl,.grid2>div{break-inside:avoid}
+  tr{break-inside:avoid}
+  h2,h3{break-after:avoid}
+  footer{margin-top:16px}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="cover">
+  <div class="kicker">Chytré úly pro Silicon Hill · montážní návod · verze 9. 11. 2026<span class="bw-only"> · černobílá verze</span></div>
+  <h1>Sestavení úlové váhy</h1>
+  <p class="sub">Postup od krabice s díly po váhu, která stojí pod úlem a každých 15 minut posílá hmotnost a teplotu přes Wi-Fi. Návod platí pro jednu váhu. Jde o přestavbu nerezové plošinové váhy Steinberg: původní elektroniku nahrazuje deska LaskaKit Meteo Mini (ESP32-C3) s 24bitovým převodníkem NAU7802, napájení obstarává Li-Ion akumulátor dobíjený solárním panelem 6 W.</p>
+  <ul class="facts">
+    <li><b>Čas</b>první váha asi 3–4 h, další asi 2 h</li>
+    <li><b>Pájení</b>4 spoje (konektor panelu)</li>
+    <li><b>Potřebné znalosti</b>multimetr, nahrání firmwaru přes USB</li>
+    <li><b>Schéma zapojení</b>na samostatné straně (kap. 05)</li>
+  </ul>
+</header>
+
+<div class="note"><p><strong>Tři pravidla, která chrání desku:</strong> 1) Před prvním zasunutím baterie i panelu změřte polaritu multimetrem proti potisku „+“ na desce. U levných kabelů JST není červený vodič vždy plus. 2) Převodník Load Cell 2 Click nikdy nepřipojujte na 5 V (pin 10 mikroBUS). 3) Akumulátor nezkratujte a nepropichujte. Na stole s ním pracujte až jako s posledním dílem.</p></div>
+
+<h2><span class="n">01</span>Jak vypadá hotová váha</h2>
+<div class="diagram">
+<svg viewBox="0 0 900 360" role="img" aria-label="Boční pohled: úl stojí celou plochou na plošinové váze, ta na vyrovnaných dlaždicích. Pod plošinou ve stínu je krabice s elektronikou, průchodky míří dolů. Kabel vede k solárnímu panelu na kolíku vedle úlu, panel míří na jih se sklonem 60°.">
+  <rect class="sky" x="0" y="0" width="900" height="310"/>
+  <rect class="soil" x="0" y="310" width="900" height="50"/>
+  <!-- slabs -->
+  <rect class="steel" x="120" y="296" width="150" height="14" rx="2" style="fill:var(--line)"/>
+  <rect class="steel" x="275" y="296" width="150" height="14" rx="2" style="fill:var(--line)"/>
+  <text x="272" y="340" text-anchor="middle" class="ts">vyrovnané dlaždice, ne tráva</text>
+  <!-- scale frame + platform -->
+  <rect class="steel" x="150" y="262" width="250" height="34" rx="3"/>
+  <rect class="blk" x="140" y="250" width="270" height="12" rx="2"/>
+  <!-- load cell + DS18B20 #1 -->
+  <circle cx="300" cy="275" r="5" fill="var(--w-yellow)" stroke="var(--block-stroke)"/>
+  <!-- hive -->
+  <rect class="wood" x="160" y="80" width="230" height="170" rx="2"/>
+  <line x1="160" y1="165" x2="390" y2="165" stroke="var(--wood-dark)" stroke-width="1.2"/>
+  <rect class="wood" x="150" y="66" width="250" height="16" rx="2"/>
+  <text x="275" y="125" text-anchor="middle" class="tb">nástavek</text>
+  <text x="275" y="210" text-anchor="middle" class="tb">plodiště</text>
+  <rect x="246" y="240" width="58" height="6" fill="var(--wood-dark)"/>
+  <text x="275" y="58" text-anchor="middle" class="ts">víko · sem při kontrole položíte 10 kg cukru</text>
+  <!-- enclosure under platform -->
+  <rect class="blk" x="168" y="264" width="66" height="26" rx="3"/>
+  <rect class="gland" x="176" y="290" width="9" height="6"/><rect class="gland" x="194" y="290" width="9" height="6"/><rect class="hous" x="214" y="290" width="11" height="7"/>
+  <!-- cable to panel -->
+  <path class="cable" d="M219 297 C 230 330, 420 335, 560 322 S 690 300, 700 230"/>
+  <!-- stake + panel -->
+  <line x1="700" y1="320" x2="700" y2="200" stroke="var(--wood-dark)" stroke-width="7" stroke-linecap="round"/>
+  <g transform="rotate(60 700 200)">
+    <rect x="620" y="194" width="160" height="12" rx="2" class="panelcell"/>
+  </g>
+  <path class="dim" d="M700 200 L790 200"/>
+  <path class="dim" d="M752 200 A 52 52 0 0 1 726 245"/>
+  <text x="760" y="236" class="ta">60°</text>
+  <text x="770" y="150" class="ta">JIH →</text>
+  <text x="770" y="166" class="ts">panel míří na jih</text>
+  <text x="700" y="345" text-anchor="middle" class="ts">kolík nebo stojan, ne víko úlu</text>
+  <!-- callouts -->
+  <path class="dim" d="M168 277 L60 225"/><text x="20" y="200" class="tb">krabice</text><text x="20" y="216" class="ts">ve stínu, průchodky dolů</text>
+  <path class="dim" d="M300 275 L470 228"/><text x="476" y="222" class="tb">DS18B20 #1</text><text x="476" y="238" class="ts">přilepené na tělo tenzometru</text>
+  <path class="dim" d="M400 160 L470 140"/><text x="476" y="134" class="tb">úl stojí celou plochou</text><text x="476" y="150" class="ts">a ničeho jiného se nedotýká</text>
+  <text x="430" y="292" class="ts">kabel panelu 4,9 m · konektor SP13 u krabice</text>
+</svg>
+</div>
+
+<h2 class="newpage"><span class="n">02</span>Díly na jednu váhu</h2>
+<p>Před začátkem si díly rozložte a odškrtejte. Spotřební materiál ze spodní části tabulky je společný pro všech 7 vah.</p>
+<div class="tbl"><table>
+<tr><th style="width:30px"></th><th>Díl</th><th>Ks</th><th>K čemu slouží</th></tr>
+<tr><td><span class="box"></span></td><td>Plošinová váha Steinberg SBS-PF-150/10A, 150 kg, 50 × 40 cm</td><td class="c">1</td><td>Rám, plošina a tenzometr. Původní indikátor se nepoužije.</td></tr>
+<tr><td><span class="box"></span></td><td>LaskaKit Meteo Mini v4.1 (ESP32-C3)</td><td class="c">1</td><td>Řídicí deska s Wi-Fi a solární nabíječkou</td></tr>
+<tr><td><span class="box"></span></td><td>MIKROE Load Cell 2 Click (NAU7802)</td><td class="c">1</td><td>24bitový převodník pro tenzometr</td></tr>
+<tr><td><span class="box"></span></td><td>Kabel µŠup / STEMMA QT → Dupont samice, 4 piny</td><td class="c">1</td><td>Propojení Click → deska (I²C)</td></tr>
+<tr><td><span class="box"></span></td><td>Kabel JST-SH 3pin, 10 cm, oboustranný</td><td class="c">1</td><td>Přívod teploměrů do desky; přestřihne se v půlce</td></tr>
+<tr><td><span class="box"></span></td><td>Kabel JST-PH 2pin, 20 cm, konektor jen na jednom konci (GME 899-643)</td><td class="c">1</td><td>Zásuvka SP13 → vstup SOLAR</td></tr>
+<tr><td><span class="box"></span></td><td>Akumulátor LaskaKit Li-Ion 2×18650 1S2P, 6400 mAh, s ochranou</td><td class="c">1</td><td>Napájení</td></tr>
+<tr><td><span class="box"></span></td><td>Solární panel SP66 6 V / 6 W s kabelem 4,9 m a držákem</td><td class="c">1</td><td>Dobíjení</td></tr>
+<tr><td><span class="box"></span></td><td>Teplotní sonda DS18B20, vodotěsná, 100 cm</td><td class="c">2</td><td>#1 na tenzometr (teplotní kompenzace), #2 v krabici u baterie</td></tr>
+<tr><td><span class="box"></span></td><td>Instalační krabička Hadex SP-F2-2, 158 × 90 × 60 mm, IP65</td><td class="c">1</td><td>Kryt elektroniky</td></tr>
+<tr><td><span class="box"></span></td><td>Kabelová průchodka PG7 (kabel 3–6,5 mm)</td><td class="c">2</td><td>G1 kabel tenzometru, G2 kabel DS18B20 #1</td></tr>
+<tr><td><span class="box"></span></td><td>Konektor SP13 IP68, 2 piny: zásuvka do panelu + vidlice na kabel</td><td class="c">1+1</td><td>Odpojitelný přívod od solárního panelu</td></tr>
+<tr><td><span class="box"></span></td><td>Svorka WAGO 221-413 (3 vodiče)</td><td class="c">3</td><td>Spojení obou teploměrů s přívodem do desky</td></tr>
+<tr><td><span class="box"></span></td><td>Šroub M5 × 10 nerez s půlkulatou hlavou + matice M5</td><td class="c">4+4</td><td>Upevnění krabice k rámu váhy</td></tr>
+<tr><td><span class="box"></span></td><td>Nosná destička z PETG (3D tisk)</td><td class="c">1</td><td>Podklad pro desky v krabici</td></tr>
+<tr><td><span class="box"></span></td><td>Silikagel (pohlcovač vlhkosti)</td><td class="c">1 sáček</td><td>Proti kondenzaci v krabici</td></tr>
+<tr><th></th><th colspan="3">Společný spotřební materiál</th></tr>
+<tr><td><span class="box"></span></td><td colspan="3">Neutrální sanitární silikon · ochranný lak na osazené DPS · smršťovací bužírky · stahovací pásky · oboustranná lepicí páska · propojovací drát 24AWG · cín</td></tr>
+</table></div>
+
+<h3>Nářadí</h3>
+<div class="grid2">
+<ul>
+  <li>Pájka a cín (4 spoje na konektoru SP13)</li>
+  <li>Multimetr (odpor, napětí, prozvánění)</li>
+  <li>Odizolovací kleště, štípačky</li>
+  <li>Malý plochý šroubovák (svorky na Clicku)</li>
+  <li>Imbusový klíč na šrouby M5</li>
+</ul>
+<ul>
+  <li>Vrtačka, stupňovitý vrták do plastu (Ø 12,5 a 13 mm), vrták Ø 5,5 mm</li>
+  <li>Horkovzdušná pistole nebo zapalovač na bužírky</li>
+  <li>Malý štětec na lak</li>
+  <li>Počítač s kabelem USB-C a Arduino IDE</li>
+  <li>Kalibrační závaží: kotouče z posilovny, ideálně 2 × 10 kg</li>
+</ul>
+</div>
+
+<div class="note info"><p><strong>Než začnete se 7 vahami najednou:</strong> otestujte všech 14 teploměrů DS18B20 vedle sebe ve stejné teplotě (krok 7). Jde o levné kopie a kus, který se liší o víc než asi 0,5 °C, je lepší vyřadit hned, ne až po zalepení na tenzometr.</p></div>
+
+<h2><span class="n">03</span>Postup krok za krokem</h2>
+
+<h3 style="margin-top:4px">A · Příprava váhy, krabice a panelu</h3>
+
+<section class="step">
+  <div class="badge">1</div>
+  <h3>Rozebrání váhy <span class="t">≈ 15 min</span></h3>
+  <ul>
+    <li>Odšroubujte sloupek s indikátorem (displejem). Kabel tenzometru vede sloupkem do indikátoru, kde je zapojený konektorem.</li>
+    <li><strong>Než cokoli odpojíte, vyfoťte</strong> desku indikátoru s popisky u vodičů (E+, E−, S+/A+, S−/A−). Fotky se hodí i do závěrečné zprávy.</li>
+    <li>Konektor odstřihněte těsně u něj, ať zůstane co nejdelší kabel. Indikátor se už nepoužije.</li>
+  </ul>
+  <div class="done"><span class="box"></span> fotky pořízeny, kabel odstřižen</div>
+</section>
+
+<section class="step">
+  <div class="badge">2</div>
+  <h3>Kontrola tenzometru multimetrem <span class="t">≈ 5 min</span></h3>
+  <ul>
+    <li>Odizolujte 5 mm na všech čtyřech vodičích a změřte odpory mezi páry.</li>
+    <li>Napájecí pár (bílý–černý) ≈ 400 Ω, signálový pár (zelený–červený) ≈ 350 Ω, křížové páry ≈ 280–300 Ω. <strong>Pár s nejvyšším odporem je napájení E+/E−.</strong></li>
+    <li>Pokud barvy nesedí s fotkou indikátoru nebo s tabulkou v kap. 04, řiďte se fotkou a měřením.</li>
+  </ul>
+  <div class="done"><span class="box"></span> odpory sedí, napájecí pár určen</div>
+</section>
+
+<section class="step">
+  <div class="badge">3</div>
+  <h3>Vrtání krabice <span class="t">≈ 20 min</span></h3>
+  <p>Krabici upevníte tak, aby jedna dlouhá úzká stěna (158 × 60 mm) mířila dolů. Do ní přijdou obě průchodky a zásuvka panelu, takže voda po kabelech steče pryč a dovnitř nezateče. Před vrtáním se podívejte dovnitř, kde jsou sloupky na šrouby víka a žebra, a otvory k nim nedávejte.</p>
+  <div class="diagram">
+  <svg viewBox="0 0 640 250" role="img" aria-label="Výkres spodní stěny krabice 158 × 60 mm: G1 a G2 průměr 12,5 mm ve vzdálenosti 32 a 64 mm od levého okraje, SP13 průměr 13 mm ve vzdálenosti 124 mm, všechny v polovině výšky spodku krabice.">
+    <rect class="blk" x="60" y="40" width="474" height="150" rx="10"/>
+    <line x1="60" y1="64" x2="534" y2="64" class="dash"/>
+    <text x="545" y="58" class="ts">spoj víka</text>
+    <!-- holes: scale 3px/mm, x0=60 -->
+    <circle class="hole" cx="156" cy="127" r="19"/><line class="cross" x1="146" y1="127" x2="166" y2="127"/><line class="cross" x1="156" y1="117" x2="156" y2="137"/>
+    <circle class="hole" cx="252" cy="127" r="19"/><line class="cross" x1="242" y1="127" x2="262" y2="127"/><line class="cross" x1="252" y1="117" x2="252" y2="137"/>
+    <circle class="hole" cx="432" cy="127" r="20"/><line class="cross" x1="422" y1="127" x2="442" y2="127"/><line class="cross" x1="432" y1="117" x2="432" y2="137"/>
+    <text x="156" y="166" text-anchor="middle" class="ta">G1 · Ø 12,5</text>
+    <text x="252" y="166" text-anchor="middle" class="ta">G2 · Ø 12,5</text>
+    <text x="432" y="166" text-anchor="middle" class="ta">SP13 · Ø 13</text>
+    <text x="156" y="100" text-anchor="middle" class="ts">tenzometr</text>
+    <text x="252" y="100" text-anchor="middle" class="ts">DS18B20 #1</text>
+    <text x="432" y="100" text-anchor="middle" class="ts">panel</text>
+    <!-- dims -->
+    <path class="dim" d="M60 214 V200 M156 214 V150 M252 214 V150 M432 214 V150 M534 214 V200"/>
+    <path class="dim" d="M60 210 H534"/>
+    <text x="108" y="230" text-anchor="middle" class="num">32</text>
+    <text x="204" y="230" text-anchor="middle">32</text>
+    <text x="342" y="230" text-anchor="middle">60</text>
+    <text x="483" y="230" text-anchor="middle">34</text>
+    <path class="dim" d="M40 40 V190 M34 40 H46 M34 190 H46"/>
+    <text x="30" y="120" text-anchor="end">60</text>
+    <text x="297" y="28" text-anchor="middle" class="tb">Spodní stěna krabice SP-F2-2 · pohled zvenku · mm</text>
+  </svg>
+  </div>
+  <ul>
+    <li>Otvory vrtejte stupňovitým vrtákem v polovině výšky spodku krabice, mimo drážku víka. Rozměry jsou orientační, posuňte je podle žeber uvnitř.</li>
+    <li>Do zadní stěny (158 × 90 mm, ta přiléhá k rámu) vyvrtejte 4 otvory Ø 5,5 mm pro šrouby M5. Stejné rozteče přeneste na rám váhy, až budete vědět, kam přesně krabice přijde (krok 12).</li>
+    <li>Otvory začistěte nožem a PG7 zatím jen volně našroubujte.</li>
+  </ul>
+  <div class="done"><span class="box"></span> 3 otvory dole, 4 otvory vzadu</div>
+</section>
+
+<section class="step">
+  <div class="badge">4</div>
+  <h3>Kabel panelu a vidlice SP13 <span class="t">≈ 25 min · pájení</span></h3>
+  <ul>
+    <li>Odstřihněte z kabelu panelu původní koncovku pro lampu.</li>
+    <li>Panel položte na slunce a změřte napětí na vodičích (naprázdno asi 6–7,5 V). <strong>Vodič, na kterém je +, označte červenou bužírkou</strong>, a to stejně na všech vahách.</li>
+    <li>Na kabel navlékněte matici, těsnění a tělo vidlice SP13. Kabel je tenčí, než vidlice těsní (4–6,5 mm), proto ho pod těsněním zesilte 1–2 vrstvami smršťovací bužírky.</li>
+    <li>Připájejte <strong>+ na pin 1, − na pin 2</strong>, na každý spoj dejte bužírku a vidlici sešroubujte.</li>
+  </ul>
+  <div class="diagram">
+  <svg viewBox="0 0 900 200" role="img" aria-label="Konektor SP13: kabel panelu plus na pin 1 a minus na pin 2 vidlice. Zásuvka v krabici: pin 1 na červený a pin 2 na černý vodič kabelu JST-PH, který se zasune do vstupu SOLAR na Meteo Mini.">
+    <text x="20" y="26" class="tb">Vidlice na kabelu panelu (krok 4)</text>
+    <text x="490" y="26" class="tb">Zásuvka v krabici (krok 5)</text>
+    <line x1="470" y1="10" x2="470" y2="190" class="dash"/>
+    <!-- panel side -->
+    <text x="20" y="66" class="ts">kabel panelu 4,9 m</text>
+    <path class="casing" d="M20 90 H250"/><path class="w r" d="M20 90 H250"/>
+    <path class="casing" d="M20 120 H250"/><path class="w k" d="M20 120 H250"/>
+    <rect x="150" y="80" width="40" height="50" rx="4" fill="var(--line)" stroke="var(--block-stroke)"/>
+    <text x="170" y="150" text-anchor="middle" class="ts">zesilující bužírka</text>
+    <rect class="hous" x="250" y="70" width="120" height="70" rx="10"/>
+    <circle cx="350" cy="90" r="6" fill="var(--block)" stroke="var(--block-stroke)"/><circle cx="350" cy="120" r="6" fill="var(--block)" stroke="var(--block-stroke)"/>
+    <text x="336" y="94" text-anchor="end" style="fill:var(--block)">1 +</text>
+    <text x="336" y="124" text-anchor="end" style="fill:var(--block)">2 −</text>
+    <text x="310" y="166" text-anchor="middle" class="ta">vidlice SP13</text>
+    <path d="M378 105 H452" class="dim"/><path d="M444 99 L452 105 L444 111" class="dim"/>
+    <!-- box side -->
+    <rect class="hous" x="490" y="70" width="70" height="70" rx="8"/>
+    <rect x="560" y="60" width="8" height="90" fill="var(--accent)"/>
+    <text x="564" y="170" text-anchor="middle" class="ts">stěna krabice</text>
+    <circle cx="510" cy="90" r="6" fill="var(--block)" stroke="var(--block-stroke)"/><circle cx="510" cy="120" r="6" fill="var(--block)" stroke="var(--block-stroke)"/>
+    <text x="525" y="94" style="fill:var(--block)">1</text><text x="525" y="124" style="fill:var(--block)">2</text>
+    <path class="casing" d="M568 90 H760"/><path class="w r" d="M568 90 H760"/>
+    <path class="casing" d="M568 120 H760"/><path class="w k" d="M568 120 H760"/>
+    <text x="664" y="76" text-anchor="middle" class="ts">JST-PH 2pin, 20 cm</text>
+    <rect class="hous" x="760" y="80" width="22" height="50" rx="3"/>
+    <rect class="blk" x="790" y="60" width="96" height="100" rx="6"/>
+    <rect class="hous" x="790" y="98" width="10" height="24" rx="2"/>
+    <text x="838" y="96" text-anchor="middle" class="ta">SOLAR</text>
+    <text x="838" y="116" text-anchor="middle" class="ts">Meteo Mini</text>
+    <text x="838" y="134" text-anchor="middle" class="ts">5–10 V</text>
+  </svg>
+  </div>
+  <div class="done"><span class="box"></span> + označeno · vidlice zapájena a sešroubována</div>
+</section>
+
+<section class="step">
+  <div class="badge">5</div>
+  <h3>Zásuvka SP13 v krabici <span class="t">≈ 15 min · pájení</span></h3>
+  <ul>
+    <li>Kabel JST-PH 2pin (20 cm) zkraťte na potřebnou délku a připájejte <strong>červený na pin 1, černý na pin 2</strong> zásuvky. Spoje přetáhněte bužírkou.</li>
+    <li>Zásuvku zasuňte do otvoru Ø 13 mm a zevnitř dotáhněte maticí.</li>
+    <li><strong>Kontrola polarity:</strong> konektor JST-PH zatím nezasouvejte. Spojte vidlici panelu se zásuvkou, dejte panel na světlo a změřte napětí přímo na kovových kolících konektoru JST-PH. Plus musí být na tom kolíku, který po zasunutí padne na „+“ u vstupu SOLAR na desce. Pokud ne, prohoďte vodiče u zásuvky.</li>
+  </ul>
+  <div class="done"><span class="box"></span> polarita SOLAR ověřena</div>
+</section>
+
+<h3>B · Elektronika</h3>
+
+<section class="step">
+  <div class="badge">6</div>
+  <h3>Tenzometr → Load Cell 2 Click <span class="t">≈ 10 min</span></h3>
+  <ul>
+    <li><strong>Nejdřív</strong> provlékněte kabel tenzometru maticí a tělem průchodky G1 do krabice. Po zapojení už to nepůjde.</li>
+    <li>Odizolujte 5–6 mm a vodiče zašroubujte do svorek na Clicku podle tabulky A v kap. 04 (bílý E+, černý E−, zelený A+, červený A−). Pokud má kabel stínění, dejte ho na GND Clicku.</li>
+    <li>Za každý vodič lehce zatáhněte, jestli drží.</li>
+  </ul>
+  <div class="done"><span class="box"></span> G1 navlečena · 4 vodiče ve svorkách</div>
+</section>
+
+<section class="step">
+  <div class="badge">7</div>
+  <h3>Click → Meteo Mini <span class="t">≈ 5 min</span></h3>
+  <ul>
+    <li>Kabel µŠup zasuňte do konektoru <strong>µŠup I²C</strong> (4pinový) na Meteo Mini. Dupont konce nasaďte na piny Clicku: černá GND (pin 8), červená 3.3V (pin 7), modrá SDA (pin 11), žlutá SCL (pin 12). Barvy nejdřív prozvoňte (tabulka B).</li>
+    <li><strong>Pin 10 (+5V) nechte volný.</strong> Pin 15 (INT) také.</li>
+  </ul>
+  <div class="done"><span class="box"></span> 4 Dupont konce na správných pinech</div>
+</section>
+
+<section class="step">
+  <div class="badge">8</div>
+  <h3>Teploměry DS18B20 a svorky WAGO <span class="t">≈ 20 min</span></h3>
+  <ul>
+    <li><strong>Test sond (jednou pro všech 14):</strong> zapojte je společně na stole a nechte 10 minut vyrovnat teplotu. Kus, který se liší o víc než asi 0,5 °C, vyřaďte.</li>
+    <li>Sondu #1 provlékněte průchodkou G2 do krabice. Sonda #2 zůstane celá uvnitř a přebytečný kabel stočte.</li>
+    <li>Kabel JST-SH 3pin přestřihněte v půlce. Jedna půlka je přívod do konektoru <strong>µŠup IO</strong> (3pinový), druhá je rezerva.</li>
+    <li>Každou barvu spojte jednou svorkou WAGO 221-413: vodič sondy #1, vodič sondy #2 a vodič přívodu. Vznikne 3× svorka se 3 vodiči.</li>
+    <li><strong>Tenké vodiče:</strong> svorka drží vodiče od 0,14 mm². Vodiče JST jsou tenčí, proto je odizolujte na 20 mm, přeložte napůl, zkruťte a teprve zasuňte. Po zaklapnutí páčky zatáhněte.</li>
+    <li>Pořadí pinů na µŠup IO (3V3 / GND / IO10) ověřte multimetrem až při oživení (krok 9), ne podle barev kabelu.</li>
+  </ul>
+  <div class="diagram">
+  <svg viewBox="0 0 900 230" role="img" aria-label="Tři svorky WAGO 221-413: červená spojuje VDD obou sond s 3V3, černá GND obou sond s GND, žlutá data obou sond s IO10 na konektoru µŠup IO.">
+    <rect class="blk" x="20" y="30" width="170" height="70" rx="6"/><text x="34" y="54" class="tb">DS18B20 #1</text><text x="34" y="72" class="ts">přes G2 z tenzometru</text>
+    <rect class="blk" x="20" y="140" width="170" height="70" rx="6"/><text x="34" y="164" class="tb">DS18B20 #2</text><text x="34" y="182" class="ts">v krabici u baterie</text>
+    <g>
+      <rect class="term" x="400" y="40" width="70" height="36" rx="5"/><text x="435" y="63" text-anchor="middle" style="fill:var(--block)">WAGO</text>
+      <rect class="term" x="400" y="98" width="70" height="36" rx="5"/><text x="435" y="121" text-anchor="middle" style="fill:var(--block)">WAGO</text>
+      <rect class="term" x="400" y="156" width="70" height="36" rx="5"/><text x="435" y="179" text-anchor="middle" style="fill:var(--block)">WAGO</text>
+    </g>
+    <g id="wires2">
+      <path class="w r" d="M190 50 H300 V52 H400"/>
+      <path class="w k" d="M190 65 H320 V110 H400"/>
+      <path class="w y" d="M190 80 H340 V168 H400"/>
+      <path class="w r" d="M190 160 H290 V64 H400"/>
+      <path class="w k" d="M190 175 H310 V122 H400"/>
+      <path class="w y" d="M190 190 H330 V180 H400"/>
+      <path class="w r" d="M470 58 H660 V96"/>
+      <path class="w k" d="M470 116 H680 V96"/>
+      <path class="w y" d="M470 174 H700 V96"/>
+    </g>
+    <rect class="hous" x="640" y="70" width="80" height="26" rx="3"/>
+    <text x="680" y="40" text-anchor="middle" class="ts">kabel JST-SH (půlka)</text>
+    <rect class="blk" x="740" y="30" width="140" height="120" rx="6"/>
+    <text x="810" y="54" text-anchor="middle" class="tb">Meteo Mini</text>
+    <text x="810" y="76" text-anchor="middle" class="ta">µŠup IO</text>
+    <text x="810" y="98" text-anchor="middle">3V3 · GND · IO10</text>
+    <text x="810" y="118" text-anchor="middle" class="ts">pořadí ověřit</text>
+    <path class="dim" d="M720 83 H740"/>
+    <text x="435" y="216" text-anchor="middle" class="ts">červená VDD → 3V3 · černá GND → GND · žlutá DQ → IO10</text>
+  </svg>
+  </div>
+  <div class="done"><span class="box"></span> sondy otestovány · 3 svorky WAGO, každá se 3 vodiči</div>
+</section>
+
+<section class="step">
+  <div class="badge">9</div>
+  <h3>Oživení na stole <span class="t">≈ 30 min · počítač</span></h3>
+  <ol>
+    <li>Připojte Meteo Mini přes USB-C (baterie a panel zatím odpojené) a nahrajte firmware váhy. Aktuální verzi a nastavení Wi-Fi dodá správce projektu.</li>
+    <li><strong>Pořadí pinů µŠup IO:</strong> se zapnutým napájením (IO4 = HIGH) změřte piny konektoru. GND je spojený s mínusem desky, na 3V3 je 3,3 V, zbylý pin je IO10. Odpovídá tomu přívod z WAGO svorek?</li>
+    <li><strong>Pull-up IO10:</strong> bez napájení změřte odpor mezi IO10 a 3V3. Mělo by vyjít asi 4,7 kΩ. Pokud ne, přidejte rezistor 4,7 kΩ mezi DQ a VDD do WAGO svorek.</li>
+    <li>V sériové konzoli zkontrolujte: I²C najde adresu <code>0x2A</code> (Click), 1-Wire najde <strong>2 adresy</strong> (sondy) a hodnota z tenzometru roste, když na plošinu zatlačíte. Když klesá, prohoďte zelený a červený vodič (A+/A−).</li>
+    <li>Sondu #1 zahřejte v dlani a zapište si, která adresa roste. To je tenzometr. Zapište ji do záznamu váhy (kap. 06).</li>
+    <li><strong>Baterie:</strong> změřte polaritu jejího konektoru proti potisku „+“ u vstupu BAT. Teprve pak ji zasuňte a odpojte USB. Váha musí měřit i bez počítače.</li>
+    <li>Zasuňte JST-PH ze zásuvky SP13 do SOLAR, připojte panel a na slunci ověřte, že napětí baterie roste.</li>
+  </ol>
+  <div class="done"><span class="box"></span> 0x2A · 2 sondy · váha reaguje · baterie se nabíjí</div>
+</section>
+
+<section class="step">
+  <div class="badge">10</div>
+  <h3>Kalibrace závažím <span class="t">≈ 15 min</span></h3>
+  <ul>
+    <li>Kotouče z posilovny mají toleranci až několik procent. Nejdřív je převažte na ověřené váze a zapište jejich skutečnou hmotnost.</li>
+    <li>Podle pokynů firmwaru v sériové konzoli proveďte táru prázdné váhy, pak položte závaží <strong>doprostřed plošiny</strong> a zadejte jeho skutečnou hmotnost. Firmware uloží offset a faktor do paměti desky.</li>
+    <li>Kontrola: sundejte a znovu položte závaží. Váha musí ukázat stejnou hodnotu s rozdílem do 50 g.</li>
+    <li>Kalibrujte bez průvanu a vždy ve stejné teplotě, ideálně uvnitř.</li>
+  </ul>
+  <div class="done"><span class="box"></span> faktor a offset zapsány do záznamu váhy</div>
+</section>
+
+<h3>C · Montáž a instalace</h3>
+
+<section class="step">
+  <div class="badge">11</div>
+  <h3>Lak a uzavření krabice <span class="t">≈ 30 min + schnutí</span></h3>
+  <ul>
+    <li>Na obě desky naneste štětcem 2 tenké vrstvy ochranného laku. Předtím zakryjte páskou konektory, tlačítko a USB-C. Tenká vrstva laku přes anténu Wi-Fi nevadí.</li>
+    <li>Po zaschnutí připevněte desky na nosnou destičku a destičku do krabice. Baterii přichyťte oboustrannou páskou a stahovací páskou.</li>
+    <li>Sondu #2 položte vedle baterie. Měří teplotu v krabici.</li>
+    <li>Dotáhněte obě průchodky PG7 tak, aby kabel nešel vytáhnout, a vložte silikagel.</li>
+    <li>Zkontrolujte těsnění víka a krabici zašroubujte.</li>
+  </ul>
+  <div class="done"><span class="box"></span> lak · průchodky dotažené · silikagel · víko</div>
+</section>
+
+<section class="step">
+  <div class="badge">12</div>
+  <h3>Krabice a sonda na váze <span class="t">≈ 20 min</span></h3>
+  <ul>
+    <li>Krabici přišroubujte 4 šrouby M5 k rámu váhy <strong>ve stínu pod plošinou</strong>, stěnou s průchodkami dolů. Kabely veďte s odkapovou smyčkou dolů a teprve pak nahoru.</li>
+    <li>Sondu #1 přilepte neutrálním silikonem na <strong>kovové tělo tenzometru</strong>, ne na zalitou část uprostřed, kde jsou tenzometry.</li>
+    <li>Silikonem přetřete také místo, kde kabel vstupuje do tenzometru.</li>
+    <li>Nic z kabeláže se nesmí opírat o plošinu, jinak by to zkreslovalo vážení.</li>
+    <li>Pokud na váhu svítí ráno slunce, přidejte stínítko. Sluncem ohřátý tenzometr ujíždí.</li>
+  </ul>
+  <div class="done"><span class="box"></span> krabice přišroubovaná · sonda #1 nalepená</div>
+</section>
+
+<section class="step">
+  <div class="badge">13</div>
+  <h3>Instalace pod úl <span class="t">≈ 30 min · s včelařem</span></h3>
+  <ul>
+    <li>Váhu postavte na vyrovnané dlaždice, ne do trávy, aby nestála ve vodě. Zkontrolujte vodováhou.</li>
+    <li>Prázdnou váhu vytárujte a teprve pak na ni postavte úl. Úl musí stát <strong>celou plochou na plošině</strong> a nesmí se dotýkat sousedních úlů, stojanu ani ničeho jiného.</li>
+    <li>Úly stěhujte za teplejšího dne, šetrně a vždy s včelařem klubu.</li>
+    <li>Panel připevněte vlastním držákem na kolík nebo stojan vedle úlu: <strong>na jih, sklon asi 60°</strong> kvůli nízkému zimnímu slunci. Na víko úlu ho nedávejte, protože se při kontrole sundává.</li>
+    <li>Kabel panelu přichyťte stahovacími páskami a připojte vidlici SP13.</li>
+    <li>Ověřte, že data dorazila na server a že napětí baterie odpovídá. Zapište datum instalace.</li>
+  </ul>
+  <div class="done"><span class="box"></span> váha v rovině · úl volně na plošině · data chodí</div>
+</section>
+
+<section class="landscape">
+<h2><span class="n">04</span>Tabulky spojů</h2>
+<div class="grid2">
+<div>
+<h3>A · Tenzometr → svorky Load Cell 2 Click (přes G1)</h3>
+<div class="tbl"><table>
+<tr><th>Vodič</th><th>Funkce</th><th>Svorka</th></tr>
+<tr><td><span class="dot" style="background:var(--w-white)"></span>bílý</td><td>E+ · napájení můstku</td><td>E+ / EXC+</td></tr>
+<tr><td><span class="dot" style="background:var(--w-black)"></span>černý</td><td>E− · napájení můstku</td><td>E− / EXC− / GND</td></tr>
+<tr><td><span class="dot" style="background:var(--w-green)"></span>zelený</td><td>A+ · signál</td><td>A+ / IN+</td></tr>
+<tr><td><span class="dot" style="background:var(--w-red)"></span>červený</td><td>A− · signál</td><td>A− / IN−</td></tr>
+</table></div>
+<p class="cap">Barvy podle uživatele HoneyPi se stejnou váhou Steinberg. Rozhoduje fotka indikátoru a měření z kroku 2.</p>
+
+<h3>C · 2× DS18B20 → µŠup IO (1-Wire)</h3>
+<div class="tbl"><table>
+<tr><th>Vodič sondy</th><th>Funkce</th><th>µŠup IO</th></tr>
+<tr><td><span class="dot" style="background:var(--w-red)"></span>červený</td><td>VDD</td><td>3V3</td></tr>
+<tr><td><span class="dot" style="background:var(--w-black)"></span>černý</td><td>GND</td><td>GND</td></tr>
+<tr><td><span class="dot" style="background:var(--w-yellow)"></span>žlutý</td><td>DQ (data)</td><td>IO10</td></tr>
+</table></div>
+</div>
+<div>
+<h3>B · Click → Meteo Mini (kabel µŠup → Dupont F)</h3>
+<div class="tbl"><table>
+<tr><th>µŠup I²C</th><th>Barva</th><th>Pin Clicku</th><th>ESP32-C3</th></tr>
+<tr><td>1 · GND</td><td><span class="dot" style="background:var(--w-black)"></span>černá</td><td>GND · 8</td><td>–</td></tr>
+<tr><td>2 · 3V3</td><td><span class="dot" style="background:var(--w-red)"></span>červená</td><td>3.3V · 7</td><td>spíná IO4</td></tr>
+<tr><td>3 · SDA</td><td><span class="dot" style="background:var(--w-blue)"></span>modrá</td><td>SDA · 11</td><td>IO19</td></tr>
+<tr><td>4 · SCL</td><td><span class="dot" style="background:var(--w-yellow)"></span>žlutá</td><td>SCL · 12</td><td>IO18</td></tr>
+</table></div>
+<p class="cap"><strong>Pin 10 (+5V) nikdy nepřipojovat.</strong> Pin 15 (INT) zůstává volný.</p>
+
+<h3>D · Napájení</h3>
+<div class="tbl"><table>
+<tr><th>Odkud</th><th>Kam</th><th>Konektor</th></tr>
+<tr><td>Baterie 2×18650, 6400 mAh</td><td>BAT</td><td>JST-PH 2</td></tr>
+<tr><td>Panel SP66 → SP13 → kabel 20 cm</td><td>SOLAR</td><td>JST-PH 2</td></tr>
+<tr><td>Počítač</td><td>USB-C</td><td>jen firmware a ladění</td></tr>
+</table></div>
+<p class="cap">Polaritu obou JST-PH vždy změřte proti potisku desky. Panel dává naprázdno asi 7,2 V, v mrazu až 8,2 V; vstup SOLAR snese 5–10 V.</p>
+</div>
+</div>
+</section>
+
+<section class="landscape">
+<h2><span class="n">05</span>Schéma zapojení</h2>
+<div class="diagram wide">
+<svg viewBox="0 0 1200 660" role="img" aria-label="Schéma zapojení: tenzometr do Load Cell 2 Click, Click kabelem µŠup do Meteo Mini, dva DS18B20 přes tři svorky WAGO na IO10, baterie do BAT, solární panel přes SP13 do SOLAR, vše v krabici SP-F2-2.">
+  <rect class="encl" x="290" y="20" width="760" height="620" rx="14"/>
+  <text x="310" y="45" class="ta">KRABICE HADEX SP-F2-2 · IP65 · 158×90×60 mm</text>
+  <rect class="gland" x="282" y="96" width="16" height="104" rx="4"/>
+  <text x="290" y="218" text-anchor="middle" class="ta">G1</text>
+  <rect class="gland" x="282" y="348" width="16" height="54" rx="4"/>
+  <text x="290" y="420" text-anchor="middle" class="ta">G2</text>
+  <rect class="hous" x="1036" y="438" width="28" height="54" rx="8"/>
+  <text x="1050" y="510" text-anchor="middle" class="ta">SP13</text>
+  <text x="1132" y="590" text-anchor="middle" class="ts">vlastní kabel</text>
+  <text x="1132" y="605" text-anchor="middle" class="ts">panelu 4,9 m</text>
+  <rect class="blk" x="20" y="70" width="190" height="170" rx="6"/>
+  <text x="32" y="94" class="tb">Tenzometr</text>
+  <text x="32" y="232" class="ts">ve váze Steinberg</text>
+  <rect class="steel" x="34" y="200" width="92" height="18" rx="3"/>
+  <circle cx="52" cy="209" r="4" fill="var(--block)"/><circle cx="108" cy="209" r="4" fill="var(--block)"/>
+  <text x="200" y="114" text-anchor="end">bílý · E+</text>
+  <text x="200" y="139" text-anchor="end">černý · E−</text>
+  <text x="200" y="164" text-anchor="end">zelený · A+</text>
+  <text x="200" y="189" text-anchor="end">červený · A−</text>
+  <text x="20" y="260" class="ts">původní kabel, konektor odstřihnout</text>
+  <rect class="blk" x="20" y="330" width="190" height="92" rx="6"/>
+  <text x="32" y="352" class="tb">DS18B20 #1</text>
+  <rect class="steel" x="32" y="368" width="58" height="14" rx="7"/>
+  <text x="32" y="410" class="ts">nalepit na tělo tenzometru</text>
+  <text x="200" y="364" text-anchor="end">VDD</text>
+  <text x="200" y="379" text-anchor="end">GND</text>
+  <text x="200" y="394" text-anchor="end">DQ</text>
+  <rect class="blk" x="380" y="70" width="230" height="210" rx="6"/>
+  <rect class="term" x="366" y="102" width="16" height="41" rx="2"/>
+  <rect class="term" x="366" y="152" width="16" height="41" rx="2"/>
+  <text x="392" y="114">E+</text><text x="392" y="139">E−</text>
+  <text x="392" y="164">A+</text><text x="392" y="189">A−</text>
+  <text x="392" y="210" class="ts">svorky – dle potisku</text>
+  <text x="598" y="104" text-anchor="end">GND · pin 8</text>
+  <text x="598" y="129" text-anchor="end">3V3 · pin 7</text>
+  <text x="598" y="154" text-anchor="end">SDA · pin 11</text>
+  <text x="598" y="179" text-anchor="end">SCL · pin 12</text>
+  <text x="495" y="246" text-anchor="middle" class="tb">MIKROE Load Cell 2 Click</text>
+  <text x="495" y="265" text-anchor="middle" class="ts">NAU7802 · I²C 0x2A · jen 3,3 V</text>
+  <rect class="hous" x="610" y="93" width="12" height="14" rx="2"/>
+  <rect class="hous" x="610" y="118" width="12" height="14" rx="2"/>
+  <rect class="hous" x="610" y="143" width="12" height="14" rx="2"/>
+  <rect class="hous" x="610" y="168" width="12" height="14" rx="2"/>
+  <text x="685" y="78" text-anchor="middle" class="ts">kabel µŠup → Dupont F</text>
+  <rect class="blk" x="760" y="70" width="250" height="330" rx="6"/>
+  <rect class="hous" x="748" y="88" width="14" height="100" rx="2"/>
+  <text x="772" y="86" class="ts">µŠup I²C (JST-SH 4)</text>
+  <text x="772" y="104">1 GND</text>
+  <text x="772" y="129">2 3V3</text>
+  <text x="772" y="154">3 SDA · IO19</text>
+  <text x="772" y="179">4 SCL · IO18</text>
+  <rect class="hous" x="748" y="290" width="14" height="60" rx="2"/>
+  <text x="772" y="286" class="ts">µŠup IO (JST-SH 3)</text>
+  <text x="772" y="304">3V3</text>
+  <text x="772" y="324">GND</text>
+  <text x="772" y="344">IO10</text>
+  <text x="840" y="324" class="ts">← pořadí ověřit</text>
+  <text x="890" y="200" text-anchor="middle" class="tb">LaskaKit Meteo Mini v4.1</text>
+  <text x="890" y="219" text-anchor="middle" class="ts">ESP32-C3 · nabíječ BQ24074 · NTC</text>
+  <text x="890" y="242" text-anchor="middle">IO4 → spíná 3,3 V µŠup</text>
+  <text x="890" y="260" text-anchor="middle">IO0 ← napětí baterie</text>
+  <rect class="hous" x="1004" y="120" width="14" height="34" rx="3"/>
+  <text x="996" y="141" text-anchor="end" class="ts">USB-C</text>
+  <rect class="hous" x="798" y="400" width="50" height="12" rx="2"/>
+  <text x="823" y="392" text-anchor="middle" class="ta">BAT</text>
+  <rect class="hous" x="928" y="400" width="50" height="12" rx="2"/>
+  <text x="953" y="392" text-anchor="middle" class="ta">SOLAR</text>
+  <rect class="blk" x="650" y="348" width="50" height="54" rx="10"/>
+  <text x="675" y="340" text-anchor="middle" class="ts">3× WAGO 221</text>
+  <rect class="blk" x="320" y="430" width="260" height="82" rx="6"/>
+  <text x="332" y="452" class="tb">DS18B20 #2</text>
+  <text x="332" y="472" class="ts">uvnitř krabice u baterie</text>
+  <rect class="steel" x="332" y="484" width="58" height="14" rx="7"/>
+  <text x="570" y="459" text-anchor="end">VDD</text>
+  <text x="570" y="474" text-anchor="end">GND</text>
+  <text x="570" y="489" text-anchor="end">DQ</text>
+  <rect class="blk" x="730" y="490" width="190" height="110" rx="6"/>
+  <text x="745" y="540" class="tb">Li-Ion 2×18650 1S2P</text>
+  <text x="745" y="560" class="ts">3,7 V · 6400 mAh · s ochranou</text>
+  <text x="745" y="578" class="ts">kabel JST-PH 2</text>
+  <text x="802" y="510" text-anchor="end" class="ta">+</text>
+  <text x="845" y="510" class="ta">−</text>
+  <rect class="dash" x="330" y="548" width="150" height="40" rx="8"/>
+  <text x="405" y="572" text-anchor="middle" class="ts">silikagel</text>
+  <text x="310" y="622" class="ts">Desky po oživení nalakovat (konektory, tlačítko a USB-C zakrýt) · průchodky a SP13 na spodní stěně</text>
+  <text x="1132" y="402" text-anchor="middle" class="tb">Panel</text>
+  <text x="1132" y="418" text-anchor="middle" class="ts">6 V / 6 W</text>
+  <rect class="blk" x="1080" y="428" width="105" height="140" rx="4"/>
+  <g>
+    <rect class="panelcell" x="1088" y="436" width="28" height="38"/><rect class="panelcell" x="1118" y="436" width="28" height="38"/><rect class="panelcell" x="1148" y="436" width="28" height="38"/>
+    <rect class="panelcell" x="1088" y="476" width="28" height="38"/><rect class="panelcell" x="1118" y="476" width="28" height="38"/><rect class="panelcell" x="1148" y="476" width="28" height="38"/>
+    <rect class="panelcell" x="1088" y="516" width="28" height="38"/><rect class="panelcell" x="1118" y="516" width="28" height="38"/><rect class="panelcell" x="1148" y="516" width="28" height="38"/>
+  </g>
+  <text x="1072" y="451" text-anchor="end" class="ta">+</text>
+  <text x="1072" y="491" text-anchor="end" class="ta">−</text>
+  <g id="wires">
+    <path class="w wh" d="M210 110 H366"/>
+    <path class="w k"  d="M210 135 H366"/>
+    <path class="w g"  d="M210 160 H366"/>
+    <path class="w r"  d="M210 185 H366"/>
+    <path class="w k" d="M622 100 H748"/>
+    <path class="w r" d="M622 125 H748"/>
+    <path class="w b" d="M622 150 H748"/>
+    <path class="w y" d="M622 175 H748"/>
+    <path class="w r" d="M210 360 H650"/>
+    <path class="w k" d="M210 375 H650"/>
+    <path class="w y" d="M210 390 H650"/>
+    <path class="w r" d="M580 455 H660 V402"/>
+    <path class="w k" d="M580 470 H670 V402"/>
+    <path class="w y" d="M580 485 H680 V402"/>
+    <path class="w r" d="M700 360 H730 V300 H748"/>
+    <path class="w k" d="M700 375 H740 V320 H748"/>
+    <path class="w y" d="M700 390 H750 V340 H748"/>
+    <path class="w r" d="M810 412 V490"/>
+    <path class="w k" d="M835 412 V490"/>
+    <path class="w r" d="M940 412 V455 H1080"/>
+    <path class="w k" d="M965 412 V475 H1080"/>
+  </g>
+</svg>
+</div>
+<ul class="legend">
+  <li><span class="sw" style="background:var(--w-red)"></span>+ / VDD / 3V3</li>
+  <li><span class="sw" style="background:var(--w-black)"></span>GND / −</li>
+  <li><span class="sw" style="background:var(--w-white)"></span>E+ (bílý)</li>
+  <li><span class="sw" style="background:var(--w-green)"></span>A+ (zelený)</li>
+  <li><span class="sw" style="background:var(--w-blue)"></span>SDA</li>
+  <li><span class="sw" style="background:var(--w-yellow)"></span>SCL / DQ</li>
+  <li><b class="mono" style="color:var(--accent)">G1–G2</b> průchodky PG7</li>
+  <li><b class="mono" style="color:var(--accent)">SP13</b> vodotěsný konektor panelu</li>
+</ul>
+</section>
+
+<h2 class="newpage"><span class="n">06</span>Kontrola cukrem a údržba</h2>
+<h3>Kontrola váhy 10 kg cukru (může udělat každý včelař)</h3>
+<div class="grid2">
+<ol>
+  <li>Večer, když včely nelétají a nefouká, si poznamenejte hmotnost, kterou ukazuje aplikace.</li>
+  <li>Položte na <strong>střed víka</strong> 10 balíčků cukru po 1 kg.</li>
+  <li>Počkejte, až se údaj ustálí (2–3 měření), a sundejte cukr.</li>
+  <li>Rozdíl by měl být 10,0 kg ± 0,1 kg. Pokud se liší víc, dejte vědět správci váhy.</li>
+</ol>
+<p class="cap">Balený cukr smí mít podle předpisů nejvýš o 15 g méně na kilogram a v průměru nesmí být lehčí. Deset balíčků proto váží 10,00–10,10 kg, s přesností lepší než 1 %. Kontrolu jde udělat bez sundávání úlu.</p>
+</div>
+
+<h3>Když něco nefunguje</h3>
+<div class="tbl"><table>
+<tr><th>Příznak</th><th>Nejčastější příčina a řešení</th></tr>
+<tr><td>I²C nenajde 0x2A</td><td>Prohozené Dupont konce nebo nezapnuté napájení µŠup (IO4). Prozvoňte kabel podle tabulky B.</td></tr>
+<tr><td>Hmotnost při zatížení klesá</td><td>Prohoďte A+ a A− (zelený a červený) na svorkách Clicku.</td></tr>
+<tr><td>Najde se jen 1 sonda nebo žádná</td><td>Vodič vyklouzl z WAGO (tenký vodič nepřeložený napůl), chybí pull-up 4,7 kΩ nebo je prohozené pořadí pinů µŠup IO.</td></tr>
+<tr><td>V zimě se baterie nenabíjí</td><td>Je to v pořádku. Pod 0 °C nabíjení blokuje čidlo NTC, aby se Li-Ion nepoškodil. Váha jede z baterie.</td></tr>
+<tr><td>V létě se baterie nenabíjí</td><td>Krabice je na slunci a uvnitř je přes 50 °C. Přesuňte ji do stínu.</td></tr>
+<tr><td>Ráno hmotnost poskočí</td><td>Slunce ohřívá tenzometr. Přidejte stínítko.</td></tr>
+<tr><td>Po dešti hmotnost stoupne</td><td>Mokrý úl je opravdu těžší. Za sucha se hodnota vrátí.</td></tr>
+<tr><td>Skok o 5–20 kg během pár minut</td><td>Přidaný nebo odebraný nástavek, kontrola včelstva nebo krmení. Pokles o 1–3 kg kolem poledne v květnu a červnu může být roj.</td></tr>
+<tr><td>Hmotnost se postupně „ztrácí“</td><td>Úl se něčeho dotýká (sousední úl, stojan, tráva) nebo se váha naklonila. Zkontrolujte vodováhou.</td></tr>
+<tr><td>Vlhko nebo kapky v krabici</td><td>Dotáhněte průchodky, zkontrolujte těsnění víka a vyměňte silikagel.</td></tr>
+</table></div>
+
+<h3>Údržba</h3>
+<ul>
+  <li>Při jarní a podzimní kontrole vyměňte silikagel, zkontrolujte těsnění a dotažení průchodek.</li>
+  <li>Očistěte panel od prachu a pylu a zkontrolujte, že mu nic nestíní.</li>
+  <li>Jednou za sezonu udělejte kontrolu cukrem.</li>
+</ul>
+
+<h3 class="newpage">Záznam váhy</h3>
+<div class="tbl record"><table>
+<tr><th>Váha č.</th><th>Sestavil(a) / datum</th><th>Adresa DS18B20 #1 (tenzometr)</th><th>Adresa DS18B20 #2</th><th>Offset / faktor</th><th>Instalace (úl, datum)</th></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table></div>
+
+<footer>
+Projekt Chytré úly pro Silicon Hill, FEL ČVUT, podpořený z Mikrograntů na podporu trvalé udržitelnosti ČVUT 2026. Podklady: dokumentace LaskaKit Meteo Mini, MIKROE Load Cell 2 Click, knihovna SparkFun NAU7802 a zkušenosti komunity HoneyPi.
+</footer>
+</div>
+
+<script>
+document.querySelectorAll('#wires path, #wires2 path').forEach(function(p){
+  var c = p.cloneNode(); c.setAttribute('class','casing'); p.parentNode.insertBefore(c, p);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Včelí váhy Silicon Hill</title>
+<meta name="description" content="Hmotnost a teplota úlů včelstev Silicon Hill na Strahově, měřené chytrými úlovými váhami. Otevřená data.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 7v14l-12 7-12-7V9z' fill='%23a8680f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/vendor/uplot/uPlot.min.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Chytré úly pro Silicon Hill · otevřená data</div>
+      <h1 id="title">Včelí váhy Silicon Hill</h1>
+      <p class="sub">Hmotnost a teplota úlů. Váhy měří každých 15 minut a data posílají jednou za hodinu, při rychlé změně hned.</p>
+    </div>
+    <div class="meta" id="meta">načítám…</div>
+  </header>
+
+  <main>
+    <section aria-labelledby="h-prehled">
+      <h2 id="h-prehled"><span class="n">01</span>Přehled úlů</h2>
+      <div class="grid" id="cards"></div>
+    </section>
+
+    <section aria-labelledby="h-detail" id="detail" hidden>
+      <h2 id="h-detail"><span class="n">02</span><span id="detail-name">Detail</span></h2>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Období" id="ranges">
+          <button type="button" data-days="2">2 dny</button>
+          <button type="button" data-days="7" aria-pressed="true">Týden</button>
+          <button type="button" data-days="30">Měsíc</button>
+          <button type="button" data-days="365">Rok</button>
+        </div>
+        <span class="spacer"></span>
+        <a class="btn" id="csv" href="#">Stáhnout CSV</a>
+      </div>
+
+      <div class="chartbox">
+        <h3>Hmotnost <span class="lg"><i style="background:var(--chart-net)"></i>čistá (bez zásahů včelaře)</span><span class="lg"><i style="background:var(--chart-raw)"></i>naměřená</span></h3>
+        <div class="chart" id="ch-weight"></div>
+      </div>
+      <div class="chartbox">
+        <h3>Teplota <span class="lg"><i style="background:var(--chart-cell)"></i>pod úlem (u tenzometru)</span><span class="lg"><i style="background:var(--chart-box)"></i>v krabici elektroniky</span></h3>
+        <div class="chart" id="ch-temp"></div>
+      </div>
+      <div class="chartbox">
+        <h3>Baterie <span class="lg"><i style="background:var(--chart-bat)"></i>napětí článku</span></h3>
+        <div class="chart" id="ch-bat"></div>
+      </div>
+
+      <h3>Události v období</h3>
+      <ul class="events" id="events"></ul>
+      <p class="note"><strong>Čistá hmotnost</strong> vynechává skoky, které způsobil včelař: přidání nebo odebrání nástavku, medobraní, krmení a kontrolu včelstva (změna o 3 kg a víc mezi dvěma měřeními). Zůstane jen to, co udělaly včely: snůška, spotřeba zásob, případně roj. Naměřená data se ukládají beze změny.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span>Projekt studentů FEL ČVUT a včelařů Silicon Hill, podpořený z Mikrograntů na podporu trvalé udržitelnosti ČVUT.</span>
+    <a id="repo" href="https://github.com/Vcelari-Silicon-Hill/chytre-ulove-vahy">Zdrojový kód (MIT)</a>
+    <a href="/flash/">Nahrát firmware do váhy</a>
+    <a href="/api/docs">API</a>
+  </footer>
+</div>
+<script src="/vendor/uplot/uPlot.iife.min.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
