@@ -18,6 +18,13 @@
   }
   fetch("manifest.json").then((r) => r.json()).then((m) => { $("fwver").textContent = `verze firmwaru ${m.version}`; }).catch(() => {});
   if (!$("url").value) $("url").value = `${location.origin}/api/v1/ingest`;
+  // ID and token handed over from the admin page; the fragment never reaches the server
+  const handoff = new URLSearchParams(location.hash.slice(1));
+  if (handoff.get("token")) {
+    $("scale_id").value = handoff.get("id") || "";
+    $("token").value = handoff.get("token");
+    history.replaceState(null, "", location.pathname);  // keep the token out of history
+  }
 
   // ---------- log + line handling ----------
   function log(text) {
@@ -143,7 +150,8 @@
 
   // ---------- form ----------
   function fillForm(c) {
-    for (const k of ["scale_id", "url", "ssid", "eap_user"]) if (c[k]) $(k).value = c[k];
+    for (const k of ["url", "ssid", "eap_user"]) if (c[k]) $(k).value = c[k];
+    if (c.scale_id && !$("token").value) $("scale_id").value = c.scale_id;  // a new token comes with its own ID
     $("tls").value = c.tls || "verify";
     if (c.interval) $("interval").value = c.interval;
     $("wifitype").value = c.eap_user ? "eap" : "psk";

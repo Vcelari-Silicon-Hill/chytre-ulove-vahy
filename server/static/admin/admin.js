@@ -163,10 +163,10 @@
       <pre id="tok-text">ID váhy: ${esc(id)}\nToken:   ${esc(token)}\nServer:  ${esc(server)}</pre>
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" type="button" data-copy="#tok-text">Kopírovat</button>
-        <a class="btn" href="/flash/">Otevřít nastavení váhy</a>
+        <a class="btn" href="/flash/#id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}">Nastavit váhu</a>
         <button class="btn" type="button" id="tok-close">Hotovo</button>
       </div>
-      <p class="note" style="margin:0">Zadejte ID a token na stránce Nastavení úlové váhy (krok 3).${isNew ? "" : " Váha s předchozím tokenem přestane posílat data, dokud ho nezměníte i v ní."}</p>`;
+      <p class="note" style="margin:0">Tlačítko Nastavit váhu otevře nastavení s už vyplněným ID a tokenem, stačí připojit váhu přes USB a uložit.${isNew ? "" : " Váha s předchozím tokenem přestane posílat data, dokud ho nezměníte i v ní."}</p>`;
     box.hidden = false;
     wireCopy(box);
     $("tok-close").addEventListener("click", () => { box.hidden = true; box.innerHTML = ""; });
