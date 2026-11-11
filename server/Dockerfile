@@ -8,5 +8,5 @@ COPY static ./static
 RUN mkdir -p /data
 VOLUME ["/data"]
 EXPOSE 8000
-HEALTHCHECK --interval=60s --timeout=5s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz')" || exit 1
+HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --start-interval=2s CMD python -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz')" || exit 1
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
