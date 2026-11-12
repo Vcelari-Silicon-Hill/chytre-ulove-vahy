@@ -196,6 +196,13 @@ def admin_redirect():
     return RedirectResponse("/admin/")
 
 
+@app.middleware("http")
+async def revalidate(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("Cache-Control", "no-cache")  # browsers recheck the ETag, so a deploy shows up on a plain reload
+    return response
+
+
 app.mount("/admin/", StaticFiles(directory=os.path.join(STATIC, "admin"), html=True), name="admin")
 app.mount("/flash/", StaticFiles(directory=os.path.join(STATIC, "flash"), html=True), name="flash")
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
