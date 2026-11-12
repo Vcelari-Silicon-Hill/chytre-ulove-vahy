@@ -15,6 +15,7 @@
 .form label{display:grid;gap:3px;font-size:13.5px;color:var(--muted)}
 .form label.wide{grid-column:1/-1}
 input,select,textarea{font:14px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line-strong);border-radius:7px;padding:7px 9px;width:100%}
+input[type=checkbox]{width:auto;margin:0 6px 0 0;vertical-align:-2px}
 textarea{font-family:var(--font-mono);font-size:12px;min-height:70px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .live{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
@@ -91,6 +92,7 @@ esp-web-install-button button{font:600 14px var(--font-body)}
         </label>
         <label>Interval měření (s)<input id="interval" type="number" min="60" step="60" value="900"></label>
       </form>
+      <label class="note"><input type="checkbox" id="remember" checked> Zapamatovat Wi-Fi v tomto prohlížeči (i s heslem, nepoužívejte na cizím počítači)</label>
       <p class="note">Prázdné pole s heslem nebo tokenem se neuloží, váha si ponechá předchozí hodnotu.</p>
       <div class="row">
         <button class="btn primary" id="save" type="button" disabled>Uložit do váhy</button>

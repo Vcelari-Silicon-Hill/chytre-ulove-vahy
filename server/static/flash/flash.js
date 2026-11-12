@@ -25,6 +25,12 @@
     $("token").value = handoff.get("token");
     history.replaceState(null, "", location.pathname);  // keep the token out of history
   }
+  // Wi-Fi settings remembered in this browser only, so the next scale needs just ID and token
+  const WIFI_KEYS = ["wifitype", "ssid", "pass", "eap_user", "eap_pass", "eap_ca"];
+  try {
+    const saved = JSON.parse(localStorage.getItem("vahy-wifi") || "null");
+    if (saved) WIFI_KEYS.forEach((k) => { if (saved[k]) $(k).value = saved[k]; });
+  } catch {}
 
   // ---------- log + line handling ----------
   function log(text) {
@@ -151,10 +157,10 @@
   // ---------- form ----------
   function fillForm(c) {
     for (const k of ["url", "ssid", "eap_user"]) if (c[k]) $(k).value = c[k];
+    if (c.ssid) $("wifitype").value = c.eap_user ? "eap" : "psk";
     if (c.scale_id && !$("token").value) $("scale_id").value = c.scale_id;  // a new token comes with its own ID
     $("tls").value = c.tls || "verify";
     if (c.interval) $("interval").value = c.interval;
-    $("wifitype").value = c.eap_user ? "eap" : "psk";
     $("token").placeholder = c.token ? "uloženo – vyplňte jen pro změnu" : "z nástroje správce";
     $("pass").placeholder = c.pass ? "uloženo – vyplňte jen pro změnu" : "";
     $("eap_pass").placeholder = c.eap_pass ? "uloženo – vyplňte jen pro změnu" : "";
@@ -168,6 +174,7 @@
     document.querySelectorAll("[data-psk]").forEach((el) => { el.hidden = eap; });
   }
   $("wifitype").addEventListener("change", toggleWifiType);
+  toggleWifiType();
 
   async function run(button, fn) {
     button.disabled = true;
@@ -197,7 +204,11 @@
       const r = await cmd(s, OKERR);
       if (r.startsWith("ERR")) throw new Error(r);
     }
-    ["token", "pass", "eap_pass"].forEach((k) => { $(k).value = ""; });
+    try {
+      if ($("remember").checked) localStorage.setItem("vahy-wifi", JSON.stringify(Object.fromEntries(WIFI_KEYS.map((k) => [k, $(k).value]))));
+      else localStorage.removeItem("vahy-wifi");
+    } catch {}
+    $("token").value = "";
     await cmd("show", /^@config /);
     log("[Nastavení uloženo do váhy.]");
   }));
