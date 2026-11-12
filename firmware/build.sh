@@ -15,6 +15,7 @@ cp "$OUT/ulova_vaha.ino.bootloader.bin" "$DEST/bootloader.bin"   # 0x0
 cp "$OUT/ulova_vaha.ino.partitions.bin" "$DEST/partitions.bin"   # 0x8000
 cp boot_app0.bin "$DEST/boot_app0.bin"                           # 0xe000, from the Arduino-ESP32 core
 cp "$OUT/ulova_vaha.ino.bin" "$DEST/ulova_vaha.bin"              # 0x10000
-sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" ../server/static/flash/manifest.json
+# ?v= on the parts so a browser never flashes a cached older binary
+sed -i.bak -e "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" -e "s/\.bin[^\"]*\"/.bin?v=$VERSION\"/" ../server/static/flash/manifest.json
 rm -f ../server/static/flash/manifest.json.bak
 echo "Firmware $VERSION -> $DEST"

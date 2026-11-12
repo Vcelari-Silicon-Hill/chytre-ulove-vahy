@@ -16,7 +16,10 @@
     $("nosupport").hidden = false;
     $("connect").disabled = true;
   }
-  fetch("manifest.json").then((r) => r.json()).then((m) => { $("fwver").textContent = `verze firmwaru ${m.version}`; }).catch(() => {});
+  // Fresh URL every load: browsers kept an old manifest and flashed the old firmware
+  const manifestUrl = `manifest.json?t=${Date.now()}`;
+  document.querySelector("esp-web-install-button").setAttribute("manifest", manifestUrl);
+  fetch(manifestUrl).then((r) => r.json()).then((m) => { $("fwver").textContent = `verze firmwaru ${m.version}`; }).catch(() => {});
   if (!$("url").value) $("url").value = `${location.origin}/api/v1/ingest`;
   // ID and token handed over from the admin page; the fragment never reaches the server
   const handoff = new URLSearchParams(location.hash.slice(1));
