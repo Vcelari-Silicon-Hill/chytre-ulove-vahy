@@ -203,7 +203,7 @@
     const add = (k, v) => sets.push(`set ${k} ${v}`);
     if (!$("scale_id").value.trim()) await registerScale();  // a token without an ID is useless (usually browser autofill)
     const id = $("scale_id").value.trim();
-    if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(id)) throw new Error("ID váhy: malá písmena, číslice a pomlčky, např. vaha-1");
+    if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(id)) throw new Error(`ID váhy „${id}“ není platné (jen malá písmena, číslice a pomlčky). Smažte ho a nové se vytvoří samo.`);
     add("scale_id", id);
     add("url", $("url").value.trim());
     add("ssid", $("ssid").value.trim());
