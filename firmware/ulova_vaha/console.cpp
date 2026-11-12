@@ -63,15 +63,14 @@ static void cmdRead() {
 }
 
 static bool rawWithPower(int32_t &raw, float &tCell) {
+  // Same path as a normal measurement: the reading still settles after power-up, so a
+  // different sample window here gave tare a constant offset against the measured weight.
   sensorsPower(true);
-  bool ok = scaleBegin() && scaleRawMedian(raw, 32);
-  tCell = NAN;
-  if (ok) {
-    Measurement m = measure();  // also reads temperature
-    tCell = m.tCell;
-  }
+  Measurement m = measure();
   sensorsPower(false);
-  return ok;
+  raw = m.raw;
+  tCell = m.tCell;
+  return m.scaleOk;
 }
 
 static void cmdTare() {
