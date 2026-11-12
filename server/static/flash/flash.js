@@ -203,7 +203,9 @@
   }));
 
   $("wifitest").addEventListener("click", () => run($("wifitest"), async () => {
-    const r = JSON.parse((await cmd("wifi", /^(@wifi |ERR)/, 40000)).replace(/^@wifi /, "") || "{}");
+    const line = await cmd("wifi", /^(@wifi |ERR)/, 40000);
+    if (line.startsWith("ERR")) throw new Error(`${line} – nejdřív klikněte na Uložit do váhy`);
+    const r = JSON.parse(line.replace(/^@wifi /, "") || "{}");
     log(r.ok ? `[Wi-Fi OK: signál ${r.rssi} dBm, připojení za ${r.ms} ms, IP ${r.ip}]` : "[Wi-Fi se nepřipojila. Zkontrolujte název sítě, heslo a registraci MAC adresy.]");
   }));
 

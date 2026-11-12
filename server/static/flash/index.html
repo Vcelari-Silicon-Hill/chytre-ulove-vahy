@@ -72,8 +72,8 @@ esp-web-install-button button{font:600 14px var(--font-body)}
       <h2><span class="n mono" style="color:var(--accent)">3</span> Wi-Fi a server</h2>
       <p>ID váhy a token se vyplní samy, když stránku otevřete tlačítkem <b>Nastavit váhu</b> ve správě po přidání váhy. Jinak je vypíše správa nebo příkaz <code>python -m app.admin add</code>. Token je tajný, nikam ho nepište veřejně.</p>
       <form class="form" id="cfg" autocomplete="off">
-        <label>ID váhy<input id="scale_id" placeholder="vaha-1" required></label>
-        <label>Token<input id="token" type="password" placeholder="z nástroje správce"></label>
+        <label>ID váhy<input id="scale_id" placeholder="vaha-1" required autocomplete="off"></label>
+        <label>Token<input id="token" type="password" placeholder="z nástroje správce" autocomplete="new-password"></label>
         <label class="wide">Adresa serveru<input id="url" placeholder="https://…/api/v1/ingest"></label>
         <label>Typ Wi-Fi
           <select id="wifitype">
@@ -82,9 +82,9 @@ esp-web-install-button button{font:600 14px var(--font-body)}
           </select>
         </label>
         <label>Název sítě (SSID)<input id="ssid" placeholder="SiliconHill"></label>
-        <label data-psk>Heslo Wi-Fi<input id="pass" type="password"></label>
+        <label data-psk>Heslo Wi-Fi<input id="pass" type="password" autocomplete="new-password"></label>
         <label data-eap hidden>Uživatel<input id="eap_user"></label>
-        <label data-eap hidden>Heslo<input id="eap_pass" type="password"></label>
+        <label data-eap hidden>Heslo<input id="eap_pass" type="password" autocomplete="new-password"></label>
         <label data-eap hidden class="wide">CA certifikát serveru RADIUS (PEM, nepovinné)<textarea id="eap_ca" placeholder="-----BEGIN CERTIFICATE-----"></textarea></label>
         <label>Ověřování HTTPS
           <select id="tls"><option value="verify">ověřovat (Let's Encrypt)</option><option value="insecure">neověřovat (jen pro test)</option></select>
