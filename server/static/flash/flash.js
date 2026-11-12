@@ -123,6 +123,7 @@
 
   function cleanup() {
     stopLive();
+    ["lv-kg", "lv-raw", "lv-tc", "lv-tb", "lv-vb"].forEach((k) => { $(k).textContent = "–"; });  // a frozen last reading looks live
     writer = null;
     setConnected(false);
   }
