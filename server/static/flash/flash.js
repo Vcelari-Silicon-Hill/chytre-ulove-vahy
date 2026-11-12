@@ -161,7 +161,7 @@
     if (c.scale_id && !$("token").value) $("scale_id").value = c.scale_id;  // a new token comes with its own ID
     $("tls").value = c.tls || "verify";
     if (c.interval) $("interval").value = c.interval;
-    $("token").placeholder = c.token ? "uloženo – vyplňte jen pro změnu" : "z nástroje správce";
+    $("token").placeholder = c.token ? "uloženo – vyplňte jen pro změnu" : "prázdné = vytvořit nový";
     $("pass").placeholder = c.pass ? "uloženo – vyplňte jen pro změnu" : "";
     $("eap_pass").placeholder = c.eap_pass ? "uloženo – vyplňte jen pro změnu" : "";
     if (!c.url) $("url").value = `${location.origin}/api/v1/ingest`;
@@ -181,9 +181,27 @@
     try { await fn(); } catch (e) { log(`[chyba: ${e.message}]`); } finally { if (writer) button.disabled = false; }
   }
 
+  // New scale: register it on the server with a random ID (rename later in admin); needs the admin login cookie
+  async function registerScale() {
+    const id = `vaha-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36).slice(0, 5)}`;
+    const r = await fetch("/api/v1/admin/scales", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "fetch", "Content-Type": "application/json" },
+      body: JSON.stringify({ id, name: id }),
+    });
+    if (r.status === 401) throw new Error("pro automatické ID a token se nejdřív přihlaste ve správě (/admin/) a zkuste to znovu");
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.detail || `server vrátil ${r.status}`);
+    $("scale_id").value = data.id;
+    $("token").value = data.token;
+    log(`[Na serveru vytvořena nová váha ${data.id}, název změníte ve správě.]`);
+  }
+
   $("save").addEventListener("click", () => run($("save"), async () => {
     const sets = [];
     const add = (k, v) => sets.push(`set ${k} ${v}`);
+    if (!$("scale_id").value.trim() && !$("token").value.trim()) await registerScale();
     const id = $("scale_id").value.trim();
     if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(id)) throw new Error("ID váhy: malá písmena, číslice a pomlčky, např. vaha-1");
     add("scale_id", id);
