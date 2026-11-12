@@ -5,7 +5,16 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
+static volatile int lastReason = 0;
+
 bool wifiConnect(uint32_t timeoutMs) {
+  static bool hooked = false;
+  if (!hooked) {
+    WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) { lastReason = info.wifi_sta_disconnected.reason; },
+                 ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+    hooked = true;
+  }
+  lastReason = 0;
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(false);
@@ -50,6 +59,25 @@ int httpPostJson(const String &body, String *response) {
   if (response) *response = code > 0 ? http.getString() : http.errorToString(code);
   http.end();
   return code;
+}
+
+int wifiLastReason() {
+  return lastReason;
+}
+
+// Lists visible networks; the ESP32-C3 only sees 2.4 GHz.
+void wifiScan(Print &p) {
+  static const char *AUTH[] = {"otevrena", "WEP", "WPA", "WPA2", "WPA/WPA2", "WPA2-Enterprise", "WPA3", "WPA2/WPA3", "WAPI", "OWE", "WPA3-Enterprise"};
+  WiFi.mode(WIFI_STA);
+  int n = WiFi.scanNetworks();
+  for (int i = 0; i < n; i++) {
+    int a = WiFi.encryptionType(i);
+    p.printf("  %-32s %4d dBm  kanal %2d  %s\n", WiFi.SSID(i).c_str(), WiFi.RSSI(i), WiFi.channel(i),
+             a < (int)(sizeof(AUTH) / sizeof(AUTH[0])) ? AUTH[a] : "?");
+  }
+  p.printf("@scan {\"count\":%d}\n", n < 0 ? 0 : n);
+  WiFi.scanDelete();
+  wifiOff();
 }
 
 String wifiIp() {

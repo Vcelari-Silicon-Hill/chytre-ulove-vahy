@@ -6,6 +6,7 @@
 #include "sensors.h"
 #include "net.h"
 #include "app.h"
+#include <WiFi.h>
 
 static const uint32_t WAIT_CONFIGURED_MS = 20000;   // window after power-up when already configured
 static const uint32_t IDLE_TIMEOUT_MS = 10UL * 60 * 1000;
@@ -40,6 +41,7 @@ static void help() {
   out.println(F("  ds                    seznam teplomeru DS18B20"));
   out.println(F("  dsfind                urci teplomer na tenzometru (zahrejte ho v dlani)"));
   out.println(F("  wifi                  test pripojeni k Wi-Fi"));
+  out.println(F("  scan (networks)       seznam viditelnych siti (jen 2,4 GHz)"));
   out.println(F("  upload                zmeri a hned odesle na server"));
   out.println(F("  mac                   MAC adresa pro registraci v siti"));
   out.println(F("  factory               smaze vsechna nastaveni"));
@@ -150,8 +152,10 @@ static void cmdWifi() {
   uint32_t t0 = millis();
   bool ok = wifiConnect(cfg.eapUser.length() ? 25000 : 15000);
   uint32_t ms = millis() - t0;
-  out.printf("@wifi {\"ok\":%s,\"ms\":%lu,\"rssi\":%d,\"ip\":\"%s\",\"mac\":\"%s\"}\n", ok ? "true" : "false", (unsigned long)ms,
-             wifiRssi(), ok ? wifiIp().c_str() : "", macString().c_str());
+  int reason = ok ? 0 : wifiLastReason();
+  out.printf("@wifi {\"ok\":%s,\"ms\":%lu,\"rssi\":%d,\"ip\":\"%s\",\"mac\":\"%s\",\"reason\":%d,\"why\":\"%s\"}\n", ok ? "true" : "false",
+             (unsigned long)ms, wifiRssi(), ok ? wifiIp().c_str() : "", macString().c_str(), reason,
+             reason ? WiFi.disconnectReasonName((wifi_err_reason_t)reason) : "");
   wifiOff();
 }
 
@@ -194,6 +198,7 @@ static bool handle(const String &line, bool &exitConsole) {
   else if (cmd == "ds") cmdDs();
   else if (cmd == "dsfind") cmdDsFind();
   else if (cmd == "wifi") cmdWifi();
+  else if (cmd == "scan" || cmd == "networks") wifiScan(out);
   else if (cmd == "upload") cmdUpload();
   else if (cmd == "mac") out.println("@mac \"" + macString() + "\"");
   else if (cmd == "factory") { configFactoryReset(); out.println(F("OK nastaveni smazano")); printConfig(); }

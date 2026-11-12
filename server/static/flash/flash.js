@@ -5,7 +5,7 @@
   const fmt1 = new Intl.NumberFormat("cs-CZ", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const fmt2 = new Intl.NumberFormat("cs-CZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const ACTION_IDS = ["save", "wifitest", "upload", "livebtn", "tare", "cal", "dsfind", "run", "cmd", "send", "disconnect"];
+  const ACTION_IDS = ["save", "wifitest", "scan", "upload", "livebtn", "tare", "cal", "dsfind", "run", "cmd", "send", "disconnect"];
   let port = null, reader = null, writer = null, readDone = null;
   let buffer = "";
   let waiters = [];
@@ -235,8 +235,26 @@
     const line = await cmd("wifi", /^(@wifi |ERR)/, 40000);
     if (line.startsWith("ERR")) throw new Error(`${line} – nejdřív klikněte na Uložit do váhy`);
     const r = JSON.parse(line.replace(/^@wifi /, "") || "{}");
-    log(r.ok ? `[Wi-Fi OK: signál ${r.rssi} dBm, připojení za ${r.ms} ms, IP ${r.ip}]` : "[Wi-Fi se nepřipojila. Zkontrolujte název sítě, heslo a registraci MAC adresy.]");
+    if (r.ok) { log(`[Wi-Fi OK: signál ${r.rssi} dBm, připojení za ${r.ms} ms, IP ${r.ip}]`); return; }
+    // ESP-IDF wifi_err_reason_t codes, firmware 1.0.1+
+    const why = { 201: "síť nenalezena: nevysílá na 2,4 GHz, je daleko, nebo se název liší (velká písmena, mezery)",
+      15: "špatné heslo", 202: "špatné heslo nebo síť odmítla přihlášení", 204: "špatné heslo", 2: "špatné heslo",
+      210: "síť používá zabezpečení, které váha neumí (zkuste WPA2)" }[r.reason];
+    log(`[Wi-Fi se nepřipojila: ${why || (r.why ? `kód ${r.reason} ${r.why}` : "zkontrolujte název sítě, heslo a registraci MAC adresy")}.]`);
+    if (r.reason !== undefined) {
+      log("[Sítě, které váha vidí (jen 2,4 GHz):]");
+      await cmd("scan", /^@scan /, 20000);
+    }
   }));
+
+  $("scan").addEventListener("click", () => run($("scan"), async () => {
+    log("[Sítě, které váha vidí (jen 2,4 GHz):]");
+    await cmd("scan", /^(@scan |ERR)/, 20000);
+  }));
+
+  $("showpw").addEventListener("change", (e) => {
+    ["token", "pass", "eap_pass"].forEach((k) => { $(k).type = e.target.checked ? "text" : "password"; });
+  });
 
   $("upload").addEventListener("click", () => run($("upload"), async () => {
     const r = await cmd("upload", /^(OK server|ERR)/, 60000);

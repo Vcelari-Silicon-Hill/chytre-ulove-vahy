@@ -2,7 +2,7 @@
 #pragma once
 #include <Arduino.h>
 
-#define FW_VERSION "1.0.0"
+#define FW_VERSION "1.0.1"
 
 // LaskaKit Meteo Mini v4.1 (ESP32-C3)
 #define PIN_USUP_PWR 4   // HIGH = 3.3 V on the µŠup connectors (Click + DS18B20)

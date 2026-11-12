@@ -92,11 +92,13 @@ esp-web-install-button button{font:600 14px var(--font-body)}
         </label>
         <label>Interval měření (s)<input id="interval" type="number" min="60" step="60" value="900"></label>
       </form>
+      <label class="note"><input type="checkbox" id="showpw"> Zobrazit hesla a token</label>
       <label class="note"><input type="checkbox" id="remember" checked> Zapamatovat Wi-Fi v tomto prohlížeči (i s heslem, nepoužívejte na cizím počítači)</label>
       <p class="note">Prázdné pole s heslem nebo tokenem se neuloží, váha si ponechá předchozí hodnotu.</p>
       <div class="row">
         <button class="btn primary" id="save" type="button" disabled>Uložit do váhy</button>
         <button class="btn" id="wifitest" type="button" disabled>Test Wi-Fi</button>
+        <button class="btn" id="scan" type="button" disabled>Sítě v okolí</button>
         <button class="btn" id="upload" type="button" disabled>Odeslat zkušební měření</button>
       </div>
     </section>
@@ -142,6 +144,6 @@ esp-web-install-button button{font:600 14px var(--font-body)}
   <footer><span>Zdrojový kód je na GitHubu pod licencí MIT. Instalátor používá <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>.</span></footer>
 </div>
 <script type="module" src="vendor/esp-web-tools/install-button.js"></script>
-<script src="flash.js?v=2"></script>
+<script src="flash.js?v=3"></script>
 </body>
 </html>
