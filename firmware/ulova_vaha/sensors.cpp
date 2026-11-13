@@ -17,6 +17,9 @@ void sensorsPower(bool on) {
     delay(50);
     Wire.begin(PIN_SDA, PIN_SCL);
     Wire.setClock(100000);
+    // weak internal pull-up (~45 kOhm) as a fallback when the board's 4.7 kOhm (R15, jumper JP1) is not connected;
+    // enough for a short cable, not a replacement for the resistor in the field
+    pinMode(PIN_ONEWIRE, INPUT_PULLUP);
   } else {
     Wire.end();
     scaleReady = false;
