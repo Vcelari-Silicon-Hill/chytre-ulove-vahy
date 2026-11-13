@@ -148,6 +148,8 @@
   });
 
   $("disconnect").addEventListener("click", disconnect);
+  // The installer opens the same port; free it first (done long before the user picks the port)
+  document.querySelector("esp-web-install-button").addEventListener("click", disconnect, true);
   async function disconnect() {
     stopLive();
     try { if (reader) await reader.cancel(); } catch {}
