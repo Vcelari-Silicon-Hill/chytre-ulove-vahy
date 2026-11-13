@@ -144,13 +144,19 @@ Measurement measure() {
   while (millis() - convStart < 800) delay(10);
   if (hasCell) m.tCell = validTemp(ds.getTempC(aCell));
   if (hasBox) m.tBox = validTemp(ds.getTempC(aBox));
-  if (!hasCell && !hasBox) {
-    // not assigned yet: use whatever sensors are there, first one as the load cell
+  if (isnan(m.tCell) && isnan(m.tBox)) {
     String addr[2];
     float t[2];
     int n = dsScan(addr, t, 2);
-    if (n > 0) m.tCell = t[0];
-    if (n > 1) m.tBox = t[1];
+    if (!hasCell && !hasBox) {
+      // not assigned yet: use whatever sensors are there, first one as the load cell
+      if (n > 0) m.tCell = t[0];
+      if (n > 1) m.tBox = t[1];
+    } else {
+      // the assigned sensors are silent: any other one still drives the cold mode,
+      // as the box so that it never feeds the weight compensation
+      for (int i = 0; i < n; i++) if (!isnan(t[i])) { m.tBox = t[i]; break; }
+    }
   }
 
   if (m.scaleOk) m.kg = rawToKg(m.raw, m.tCell);

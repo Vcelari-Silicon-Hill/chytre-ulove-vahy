@@ -119,9 +119,19 @@ static void cmdDsFind() {
   float base[8], t[8];
   sensorsPower(true);
   int n = dsScan(a, base, 8);
+  if (n == 1) {
+    // a single thermometer needs no warming: it serves the load cell and the cold mode
+    sensorsPower(false);
+    cfg.dsCell = a[0];
+    cfg.dsBox = "";
+    configSaveCal();
+    out.printf("OK jediny teplomer=%s (%.2f C), pouzije se pro tenzometr i zimni rezim\n", cfg.dsCell.c_str(), base[0]);
+    printConfig();
+    return;
+  }
   if (n != 2) {
     sensorsPower(false);
-    out.printf("ERR nalezeno %d teplomeru, cekam presne 2\n", n);
+    out.printf("ERR nalezeno %d teplomeru, cekam 1 nebo 2. Zkontrolujte rezistor 4,7 kOhm mezi DQ a 3V3 a poradi vodicu.\n", n);
     return;
   }
   out.println(F("INFO zahrejte teplomer, ktery patri na tenzometr, v dlani (max. 60 s)"));

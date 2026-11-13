@@ -309,7 +309,7 @@
   }));
 
   $("dsfind").addEventListener("click", () => run($("dsfind"), async () => {
-    log("[Zahřejte v dlani teploměr přilepený na tenzometru. Čekám až 60 s…]");
+    log("[Jsou-li připojené dva teploměry, zahřejte v dlani ten přilepený na tenzometru. Čekám až 60 s…]");
     await cmd("dsfind", OKERR, 75000);
   }));
 
