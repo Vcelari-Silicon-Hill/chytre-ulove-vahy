@@ -53,6 +53,16 @@
     if (line.startsWith("@hello ")) {
       const h = parseAt(line, "hello");
       if (h) $("devinfo").textContent = `firmware ${h.fw} · MAC ${h.mac}`;
+      // The scale just restarted: a configured one leaves the console after 20 s without input,
+      // and whatever was sent before the restart is lost. Hold the console and fail those commands now.
+      if (writer) {
+        writer.write(new TextEncoder().encode("\n")).catch(() => {});
+        const lost = waiters;
+        waiters = [];
+        lost.forEach((w) => w.reject(new Error("váha se restartovala, zkuste to znovu")));
+        cmd("show", /^@config /, 3000).catch(() => {});
+        log("[Váha se restartovala, konzole zůstává otevřená.]");
+      }
     } else if (line.startsWith("@config ")) {
       const c = parseAt(line, "config");
       if (c) fillForm(c);
@@ -107,6 +117,7 @@
         reject(new Error(`váha neodpověděla na „${line.split(" ")[0]}“`));
       }, timeoutMs);
       w.resolve = (l) => { clearTimeout(t); resolve(l); };
+      w.reject = (e) => { clearTimeout(t); reject(e); };
       write(line).catch(reject);
     }));
     queue = job.catch(() => {});
@@ -144,7 +155,7 @@
       await cmd("show", /^@config /, 3000);
       await cmd("mac", /^@mac /, 3000);
     } catch {
-      log("[Váha neodpovídá. Stiskněte RESET, počkejte 2 s a připojte se znovu do 20 sekund.]");
+      log("[Váha neodpovídá, asi spí. Stiskněte RESET. Když se stránka odpojí, klikněte do 20 sekund znovu na Připojit.]");
     }
   });
 
