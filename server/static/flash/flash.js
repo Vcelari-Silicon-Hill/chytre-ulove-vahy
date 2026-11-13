@@ -4,6 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const fmt1 = new Intl.NumberFormat("cs-CZ", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const fmt2 = new Intl.NumberFormat("cs-CZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt3 = new Intl.NumberFormat("cs-CZ", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
   const ACTION_IDS = ["save", "wifitest", "scan", "upload", "livebtn", "tare", "cal", "dsfind", "run", "cmd", "send", "disconnect"];
   let port = null, reader = null, writer = null, readDone = null;
@@ -269,7 +270,7 @@
 
   // ---------- calibration ----------
   function showLive(r) {
-    $("lv-kg").textContent = r.kg == null ? "nekalibrováno" : `${fmt2.format(r.kg)} kg`;
+    $("lv-kg").textContent = r.kg == null ? "nekalibrováno" : `${fmt3.format(r.kg)} kg`;
     $("lv-raw").textContent = r.scale_ok ? String(r.raw) : "převodník nenalezen";
     $("lv-tc").textContent = r.t_cell == null ? "–" : `${fmt1.format(r.t_cell)} °C`;
     $("lv-tb").textContent = r.t_box == null ? "–" : `${fmt1.format(r.t_box)} °C`;
